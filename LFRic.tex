@@ -1,0 +1,118 @@
+\documentclass[times]{elsarticle}
+\bibliographystyle{elsarticle-num}
+\usepackage{graphicx,colordvi}
+\begin{document}
+\begin{frontmatter}
+
+\title{LFRic and PSyclone: Building a Domain Specific Language for Weather and Climate models}
+
+\author[met]{S.~Adams}
+\author[hartree]{R.~Ford}
+\author[met]{M.~Hambley}
+\author[met]{J.M.~Hobson}
+\author[met]{I.~Kavcic}
+\author[met,read]{C.~M.~Maynard}
+\ead{c.m.maynard@reading.ac.uk}
+\author[met]{T.~Melvin}
+\author[bath]{E.H.~Mueller}
+\author[met]{S.~Mullerworth}
+\author[hartree]{A.~Porter}
+\author[downunder]{M.~Rezney}
+\author[met]{B.~Shipway}
+\author[met]{R.~Wong}
+
+
+
+
+\address[met]{Met Office, FitzRoy Road, Exeter, EX1 3PB}
+\address[read]{Department of Computer Science, Polly Vacher Building,
+  University of Reading, Reading, UK, RG6 6AY}
+\address[bath]{Department of Mathematics, University of Bath, Bath}
+\address[downunder]{University of Monash, Melbourne, Australia}
+\address[hartree]{Hartree Centre, STFC Daresbury, Grim up North}
+
+\begin{abstract}
+\end{abstract}
+
+\begin{keyword}
+solvers
+\end{keyword}
+
+\end{frontmatter}
+
+\section{Introduction}
+In common with many science applications, Exascale computing presents
+a disruptive change for weather and climate models. However, the
+difficulty in porting and optimising legacy codes to new hardware is
+particular acute for this domain as the software is large ($O(10^6)$
+lines of code), takes a long time develop ($\sim 10$ years for a new
+dycore) and is long-lived (typically $\sim 25$ years or longer). These
+timescales are much longer than the changes in both processor
+architectures and programming models necessary to exploit these
+architectures~\cite{gmd-2017-186}. Moreover, highly scalable
+algorithms are necessary to exploit the necessary degree of
+parallelism Exascale computers are likely exhibit.
+
+In collaboration with academic partners, the Met Office is developing
+a new dynamical core, called Gung Ho~\cite{MELVIN2018342}. By employing a
+mixed Finite Element Method on an unstructured mesh, the new dycore is
+designed to maintain the scientific accuracy of the current Unified Model (UM)
+dycore (ENDGame~\cite{QJ:QJ2235}), whilst allowing improved scalability
+by avoiding the singular pole of the lon-lat grid. A new atmospheric
+model and software infrastructure, named LFRic after Lewis Fry
+Richardson, is being developed to host the Gung Ho dycore, as the the structured, lon-lat
+grid is inherent in the data structures of the UM.
+
+The software design is based on a layered architecture and a 
+{\em separation of concerns} between the natural science code in which
+the mathematics is expressed and the computational science code where the
+parallelism and other performance optimisations are expressed. In particular,
+there are three layers. The top layer, the algorithm layer, is where high-level mathematical 
+operations on global fields are performed. The bottom layer is the kernel layer
+where these operations are expressed on a single column of data. In between is the
+Parallelisation System or PSy layer, where the horizontal looping and parallelism is
+expressed. This abstraction, called PSyKAl, is written in Fortran with Fortran 2003
+Object Orientation to encode the rules of the API.
+Moreover, a Python code called Psyclone can parse the algorithm and kernel layers and
+generate the Psy layer with different target programming models. In effect, the PSyKAl API
+and Psyclone are a Domain Specific Embedded Language (DESL). Natural science code which
+conforms to this API can be written in serial and the parallel code is then generated automatically.
+
+The model is under active development and indeed, the science and
+numerical analysis are still areas of active research. However, in
+order to assess the scientific performance of the model, sufficiently
+computationally challenging problems must be tackled. Thus, the
+ability to generate optimisations for current architectures is also
+required. In this paper, the software design and strategy for future
+architectures is presented. Moreover, some preliminary performance
+analysis is presented, including scaling analysis to a quarter of
+million cores on the Met Office Cray XC40. The use of redundant
+computation, shared memory threaded parallelism such as OpenMP and
+OpenACC and performance on different architectures such as CPUs, GPUs
+and ARM processors are also discussed. Furthermore, as I/O is a significant performance
+factor for weather and in particular climate models some analysis of
+I/O at scale using the asynchronous IO server of the XIOS library is
+presented.
+
+\section{\label{sec:GH}Gung Ho}
+A bit about Gung Ho, but mostly the unstructured mesh, quads, 2+1D
+mesh, vertically structured. Etc.
+
+\section{\label{sec:SoC}Separation of Concerns}
+F2K3, design, libraries, ESFM and YAXT, XIOS etc. Separation of
+Concerns, PSyKal and the PSy layer
+
+\section{\label{sec:Pscylone}PSyclone}.
+The code generator.
+
+\section{\label{sec:scal}Scaling}.
+Scaling, MPI and OpenMP etc.
+
+\section{Conclusion}
+\label{sec:con}
+Conclusions, future work etc
+
+
+\bibliography{mibib.bib}
+
+\end{document}
