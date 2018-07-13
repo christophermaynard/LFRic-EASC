@@ -35,7 +35,7 @@
 \end{abstract}
 
 \begin{keyword}
-solvers
+
 \end{keyword}
 
 \end{frontmatter}
@@ -46,7 +46,7 @@ a disruptive change for weather and climate models. However, the
 difficulty in porting and optimising legacy codes to new hardware is
 particular acute for this domain as the software is large ($O(10^6)$
 lines of code), takes a long time develop ($\sim 10$ years for a new
-dycore) and is long-lived (typically $\sim 25$ years or longer). These
+dynamical core) and is long-lived (typically $\sim 25$ years or longer). These
 timescales are much longer than the changes in both processor
 architectures and programming models necessary to exploit these
 architectures~\cite{gmd-2017-186}. Moreover, highly scalable
@@ -54,14 +54,15 @@ algorithms are necessary to exploit the necessary degree of
 parallelism Exascale computers are likely exhibit.
 
 In collaboration with academic partners, the Met Office is developing
-a new dynamical core, called Gung Ho~\cite{MELVIN2018342}. By employing a
-mixed Finite Element Method on an unstructured mesh, the new dycore is
-designed to maintain the scientific accuracy of the current Unified Model (UM)
-dycore (ENDGame~\cite{QJ:QJ2235}), whilst allowing improved scalability
-by avoiding the singular pole of the lon-lat grid. A new atmospheric
-model and software infrastructure, named LFRic after Lewis Fry
-Richardson, is being developed to host the Gung Ho dycore, as the the structured, lon-lat
-grid is inherent in the data structures of the UM.
+a new dynamical core, called Gung Ho~\cite{MELVIN2018342}. By
+employing a mixed Finite Element Method on an unstructured mesh, the
+new dynamical core is designed to maintain the scientific accuracy of
+the current Unified Model (UM) dycore (ENDGame~\cite{QJ:QJ2235}),
+whilst allowing improved scalability by avoiding the singular pole of
+the lon-lat grid. A new atmospheric model and software infrastructure,
+named LFRic after Lewis Fry Richardson, is being developed to host the
+Gung Ho dynamical core, as the the structured, lon-lat grid is inherent in the
+data structures of the UM.
 
 The software design is based on a layered architecture and a 
 {\em separation of concerns} between the natural science code in which
@@ -83,16 +84,16 @@ numerical analysis are still areas of active research. However, in
 order to assess the scientific performance of the model, sufficiently
 computationally challenging problems must be tackled. Thus, the
 ability to generate optimisations for current architectures is also
-required. In this paper, the software design and strategy for future
-architectures is presented. Moreover, some preliminary performance
-analysis is presented, including scaling analysis to a quarter of
-million cores on the Met Office Cray XC40. The use of redundant
-computation, shared memory threaded parallelism such as OpenMP and
-OpenACC and performance on different architectures such as CPUs, GPUs
-and ARM processors are also discussed. Furthermore, as I/O is a significant performance
-factor for weather and in particular climate models some analysis of
-I/O at scale using the asynchronous IO server of the XIOS library is
-presented.
+required. 
+
+The paper is organised as follows, the Gung Ho dynamical core and
+computational aspects are presented in section~\ref{sec:GH}. The
+software design for the separation of concerns and PSKAl API are described 
+are described in section~\ref{sec:SoC}. The model infrastructure and
+use of libraries is discussed in section~\ref{sec:lib}. PSyclone, the
+code generator is presented in section~\ref{sec:Psyclone}. Finally a
+scaling analysis is presented in section~\ref{sec:scal} and
+conclusions drawn in section~\ref{sec:con}.
 
 \section{\label{sec:GH}Gung Ho}
 A bit about Gung Ho, but mostly the unstructured mesh, quads, 2+1D
@@ -105,7 +106,7 @@ Concerns, PSyKal and the PSy layer
 \section{\label{sec:lib}Infrastructure}.
 ESMF, YAXT, XIOS, pFunit? netcdf etc.
 
-\section{\label{sec:Pscylone}PSyclone}.
+\section{\label{sec:Psyclone}PSyclone}.
 The code generator.
 
 \section{\label{sec:scal}Scaling}.
