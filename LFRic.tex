@@ -100,8 +100,20 @@ A bit about Gung Ho, but mostly the unstructured mesh, quads, 2+1D
 mesh, vertically structured. Etc.
 
 \section{\label{sec:SoC}Separation of Concerns}
-F2K3, design, libraries Separation of
-Concerns, PSyKal and the PSy layer
+Science applications in general and weather and climate codes in
+particular are written in high-level languages such as Fortran or
+C/C++. Fortran is commonly employed for weather and climate codes and
+can be considered a Domain Specific Language (DSL) for numerical
+computation.  The code is structured to solve a mathematical problem
+as an alogorithm and in principle, separate from hardware architecural
+concerns. The compiler generates machine specific instructions from
+code which conforms to the langauge standard and can, in principle,
+make optimisation choices to exploit the architecture of different
+processors. 
+
+This abstraction of a separation of concerns between mathematics code
+and machine code is powerful and allows for both performance and
+portabilty of science codes.
 
 \section{\label{sec:lib}Infrastructure}.
 ESMF, YAXT, XIOS, pFunit? netcdf etc.
