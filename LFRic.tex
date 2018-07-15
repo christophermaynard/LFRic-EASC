@@ -121,6 +121,42 @@ ESMF, YAXT, XIOS, pFunit? netcdf etc.
 \section{\label{sec:Psyclone}PSyclone}.
 The code generator.
 
+\section{\label{sec:Solver}Linear solvers and preconditioners}
+Iterative solvers for large sparse linear systems of equations are required in several places in the model. For example, since mass matrices in the finite element discretisation are not diagonal, they need to be inverted with a small number of iterations of a Krylov subspace method. More importantly, the semi-implicit timestepping approach requires the solution of a very large sparse system for all prognostic unknowns in each step of the non-linear Picard iteration. Since the system is ill-conditioned, it needs to be preconditioned efficiently. This is achieved by the (approximate) reduction to an elliptic system for the pressure, which is preconditioned with a multigrid algorithm (see Section \ref{sec:preconditioner}). To increase efficiency, the pressure preconditioner can be wrapped in its own iterative solver for the Helmholtz system. Note that in contrast to the  approach already employed in the ENDGame model \cite{QJ:QJ2235}, an outer iteration over the full system is still required due to the non-diagonal nature of the finite element mass matrices. This results in a rather complex solver.
+\subsection{Solver infrastructure}
+To allow easy implementation of sophisticaed nested iterative solvers and preconditioners, a dedicated abstraction was developed by using advanced object oriented features of Fortran 2003. This approach follows similar design philosophies in widely used linear algebra libraries such as PETSc \cite{Balay1997,Balay2018} and DUNE-ISTL \cite{Blatt2007}. More specifically, the implementation in LFRic uses derived types which realise the following operations (see Fig. \ref{fig:class_hierarchy}, left):
+\begin{itemize}
+\item \textbf{Vector} types which support common linear algebra operations such as AXPY $y\mapsto y+\alpha x$ and dot products $x,y\mapsto s = \langle x,y\rangle$. The most important vector-type is \texttt{field\_vector}, which contains a collection of model fields.
+\item \textbf{Linear operator} types which implement the operation $x\mapsto y=Ax$
+\item \textbf{Preconditioners} which solve the system $Px=b$ for a
+  given right hand side $b$ and some operator $P\approx A$
+\item \textbf{Iterative solvers} which solve the system $Ax=b$ iteratively for a given right hand side $b$. Currently supported solvers include CG, GMRES and BiCGStab.
+\end{itemize}
+\begin{figure}
+  \begin{center}
+    \includegraphics[width=0.45\linewidth]{class_hierarchy.pdf}
+    \hfill
+    \includegraphics[width=0.45\linewidth]{class_concrete.pdf}
+    \caption{Derived class hierarchy for solvers and preconditioners in LFric (left) and conctrete implementation for the linear system in implicit timestepping (right).}
+    \label{fig:class_hierarchy}
+  \end{center}
+\end{figure}
+Each of those types is derived from an abstract base type. The iterative solver types operate on derived vector types and are passed preconditioner and linear operator objects which adhere to the interface of their abstract base types.  This implies that only one instance of a particular solver has to be implemented in the code. Apart from avoiding code duplication this increases reliability and maintainability, since only one inctance of each solver has to be developed and tested. In addition, it allows easy ``plug-and-play'' to explore the space of all possible solver/preconditioner combinations to achieve optimal performance.
+
+To solve a particular problem, the user has to develop bespoke derived types for the corresponding linear operator and preconditioners. Note that the \texttt{apply()} methods of those derived types contain invoke kernels, which guarantees optimal performance of the entire model since typically most of the time is spent in those operations. For example, to construct a solver for the implicit linar system which is inverted in every semi-implicit timestep, the user implements the following objects (see Fig. \ref{fig:class_hierarchy}, right):
+\begin{itemize}
+\item A linear operator type which applies the full linear system to all components of a \texttt{field\_vector}.
+\item A preconditioner type which reduces the full linear system to the (approximate) Schur complement in pressure space by lumping the velocity mass matrix; this preconditioner then calls the solver for the pressure (Helmholtz-) system.
+\item A linear operator type which applies the Helmholtz-operator for the pressure system.
+\item A preconditioner type which approximately inverts the Helmholtz operator (see section \ref{sec:preconditioner}).
+\end{itemize}
+Once implemented, those linear operators/preconditioners need to be passed to suitable existing linear solvers.
+
+In addition to this more traditional approximate Schur-complement approach for solving the full linear system, the development of solvers based on a hybridisation approach is currently explored. Since an exact Schur-complement can be formed in this case, hybridisation avoids the expensive iteration over the full linear system, and potentially leads to significant improvements in performance.
+\subsection{\label{sec:preconditioner}Preconditioner}
+To precondition the strongly anisotropic Helmholtz-operator for the pressure system, the tensor-product multigrid approach in \cite{Borm2001} is used in LFric. The algorithm has been tested extensively for representative elliptic equations in atmospheric modelling in \cite{Mueller2014,Dedner2016}, including a mixed-finite element discretisation of a linear gravity wave system in \cite{Mitchell2016}. The key idea to address the strong vertical anisotropy due to the high-aspect ratio of the domain is to combine vertical-only smoothing (line relaxation) with a horizontal multigrid hierarchy. To allow the easy construction of the vertical-only operators in the Schur-complemenent from the finite element discretisation of the full equations, a suitable operator algebra was developed in \cite{Mitchell2016} and tested in the Firedrake library. The same data structures were implemented as derived Fortran 2003 types in the LFric code.
+
+Compared to simpler preconditioner, which do not combine vertical line relaxation with a horizontal multigrid hierarchy, then tensor-product multigrid approach typically reduces the solution time of the pressure system by a factor of at least two \cite{Mueller2014,Mitchell2016}.
 \section{\label{sec:scal}Scaling}.
 Scaling, MPI and OpenMP etc.
 
