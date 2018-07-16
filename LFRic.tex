@@ -137,7 +137,7 @@ Space (PGAS) languages, such as Co Array Fortran, Unified Parallel C,
 Chapel and GASPI for distributed memory, new programming languages such
 as OpenCL or CUDA and directive based programming models for threaded
 and shared memory parallelism such as OpenMP or OpenACC. However,
-the programming models lag behing the rapidly evolving computer
+the programming models lag behind in development of the rapidly evolving computer
 architectures and particular models lack feature or processor coverage
 making the choice of programming model difficult. This is especially
 problematic for weather and climate applications with their long development
@@ -165,17 +165,75 @@ separated into three layers. The top layer is the algorithm
 layer. Here, algorithms are expressed as operations on global,
 data-parallel field objects. The middle layer, termed the
 Parallelisation System or PSy layer contains the horizontal looping
-and is where the data parallelism is expressed.  
+and is where the data parallelism is expressed.  The bottom layer is
+comprised of the kernels which encode the operation invoked in the
+algorithm layer. These operate on a single column of data. 
+Shown in figure~\ref{fig:psykal} is a schematic diagram of this
+layered software achitecture. The red arrows indicate the control flow
+though the different layers. 
 
-\begin{figure}[]
-\centering\includegraphics[width=1.0\linewidth]{PSyKAl.pdf}
-\caption{\label{fig:psykal} Schematic diagram of the PSyKAl layered architecture.}
+\begin{figure}
+\centering\includegraphics[width=0.8\linewidth]{PSyKAl.pdf}
+\caption{\label{fig:psykal} Schematic diagram of the PSyKAl layered
+  architecture. A single model could be for example, the atmospheric
+  model. The blue vertical line between the PSy layer and the
+  Algorithm and Kernel layers represents a separation of the science
+  and parallel code.}
 \end{figure}
+
+The APIs between the layers are tightly controlled. The PSy layer can
+only be called from the algorithm layer by an {\em invoke} procedure
+call. The permitted arguments to these invoke prodecures are resticted
+to be the kernels and the fields that the kernels will operate on. The
+kernels can only be called from the PSy layer with the unpacked data
+arrays, scalars for loop bounds and supporting arrays of both reals
+and integers for Finite Element Method over an unstructured mesh.
+These coding rules are enforced by using Fortran 2003 object
+orientation style to control the APIs. By restricting the domain of
+the problem from all numerical mathematics to only that required (in
+the first instance) to the Gung Ho dynamical core it is possible to
+constrain the parallelism to the PSy layer. By restoring the
+separation of concerns between the science code and the
+parallel/optimisation code means in principle different programming
+models can be employed in the PSy layer without changing the science
+code. Moreover, the PSyKAl API can be thought of a Domain Specific
+Embedded Language (DSEL).
+
+Compilers in general have to be conservative about the assumptions
+they can make in order to guarantee correctness. However, a further
+advantage of the domain specific approach is that developers can
+explicitly express the domain knowledge which is not possible in a
+standard, high level language. In the case of the LFRic model, data
+access descriptors are employed to say whether access to a field is
+read, write, readwrite or increment. This information is embedded in
+Fortran as part of the kernel. Other information encoded in this way
+is the loop iterator (for example {\em cells}), whether the kernel
+operates on a field which lives on a specific function space, whether
+any of the fields live on common function spaces and for FEM kenrnels
+whether the kernel uses any basis functions. 
+
+The restricted domain, strict control of the APIs between layers and
+critically, the data access descriptors and other kernel metadata
+allow the PSy layer to be constructed entirely according to a set of
+rules. The code itself can then be automatically generated. This is
+done by a python code parser, transformer and code generator called
+PSyclone. More details of PSyclone itself can be found in
+section~\ref{sec:psyclone}. The generated code is mostly Fortran.
+These are calls to the LFRic infrastructure which might contain the MPI
+distributed memory parallelism and calls to the LFRic infrastructure to dereference the Fortran 2003
+objects, looping over the horizontal mesh elements and calling the
+kernels themselves. However, PSyclone can also perform transformations
+and target other progamming models such as OpenMP or OpenACC. PSyclone
+is then in effect a DSEL compiler. PSyclone also does one other
+important code generation function. In the algorithm layers, the calls
+to the invoke procedure are replaced with a specific prodcedure call
+to the PSy layer. The PSy layer code can then be optimised depending on
+the kernels in the invoke and the metadata. 
 
 \section{\label{sec:lib}Infrastructure}.
 ESMF, YAXT, XIOS, pFunit? netcdf etc.
 
-\section{\label{sec:Psyclone}PSyclone}.
+\section{\label{sec:psyclone}PSyclone}.
 The code generator.
 
 \section{\label{sec:Solver}Linear solvers and preconditioners}
