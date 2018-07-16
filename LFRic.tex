@@ -17,7 +17,7 @@
 \author[bath]{E.H.~Mueller}
 \author[met]{S.~Mullerworth}
 \author[hartree]{A.~Porter}
-\author[downunder]{M.~Rezney}
+\author[downunder]{M.~Rezny}
 \author[met]{B.~Shipway}
 \author[met]{R.~Wong}
 
@@ -28,7 +28,7 @@
 \address[read]{Department of Computer Science, Polly Vacher Building,
   University of Reading, Reading, UK, RG6 6AY}
 \address[bath]{Department of Mathematics, University of Bath, Bath}
-\address[downunder]{University of Monash, Melbourne, Australia}
+\address[downunder]{Monash University, Melbourne, Australia}
 \address[hartree]{Hartree Centre, STFC Daresbury, Grim up North}
 
 \begin{abstract}
@@ -45,8 +45,8 @@ In common with many science applications, Exascale computing presents
 a disruptive change for weather and climate models. However, the
 difficulty in porting and optimising legacy codes to new hardware is
 particular acute for this domain as the software is large ($O(10^6)$
-lines of code), takes a long time develop ($\sim 10$ years for a new
-dynamical core) and is long-lived (typically $\sim 25$ years or longer). These
+lines of code), takes a long time develop (a decade or more for a new
+dynamical core) and is long-lived (typically quarter of a century or longer). These
 timescales are much longer than the changes in both processor
 architectures and programming models necessary to exploit these
 architectures~\cite{gmd-2017-186}. Moreover, highly scalable
@@ -102,19 +102,62 @@ mesh, vertically structured. Etc.
 \section{\label{sec:SoC}Separation of Concerns}
 Science applications in general and weather and climate codes in
 particular are written in high-level languages such as Fortran or
-C/C++. Fortran is commonly employed for weather and climate codes and
-can be considered a Domain Specific Language (DSL) for numerical
-computation.  The code is structured to solve a mathematical problem
-as an alogorithm and in principle, separate from hardware architecural
-concerns. The compiler generates machine specific instructions from
-code which conforms to the langauge standard and can, in principle,
-make optimisation choices to exploit the architecture of different
-processors. 
+C/C++. Indeed, Fortran is commonly employed for weather and climate
+codes and can be considered a Domain Specific Language (DSL) for
+numerical computation. Using a such a high-level language, an
+algorithm is written to solve a mathematical problem without
+consideration for the processor archictecture. The compiler generates
+machine specific instructions and can, in principle, make optimisation
+choices to exploit the architecture of different processors.
 
 This abstraction of a separation of concerns between mathematics code
-and machine code is powerful and allows for both performance and
-portabilty of science codes.
+and machine code is powerful and enables both the portability of
+science code to different processor architectures and allows the
+application to exploit a significant\footnote{What constitutes good
+  performance depends on a variety of factors.} fraction of the peak
+performance of the processor. Whilst many science applications may
+contain code optimisations in performance critical sections, for
+example, blocking or tiling loop nests to bet utilise cache memory,
+the code, in general these applications have relied on clock
+speed increases between processor generations to increase performance.
 
+Processor speed increases between generation ceased more than a decade
+ago due to the abscence of Dennard scaling~\cite{dennard}. Instead,
+processors have had increasing numbers of processor cores per
+socket. Science applications had already adapted to run on mutliple
+node supercomputers with the distributed memory, data parallelism
+typical expressed over MPI. However, multi-core nodes present
+additional challenges and heterogenous compute nodes such as
+CPU + GPU with distinct memory spaces require additional programming
+models. Moreover, the algortithms employed combined with data
+parallelism may not be suffient to exploit this explosion of parallelism.
+
+Many programming models exist, MPI and Partitioned Global Address
+Space (PGAS) languages, such as Co Array Fortran, Unified Parallel C,
+Chapel and GASPI for distributed memory, new programming languages such
+as OpenCL or CUDA and directive based programming models for threaded
+and shared memory parallelism such as OpenMP or OpenACC. However,
+the programming models lag the rapidily evolving computer
+architectures and particular models lack feature or processor coverage
+making the choice of programming model difficult. This is especially
+true for weather and climate applications with their long development
+cycles. 
+
+Many applications have adopted an MPI + X model, where X is one
+or more of the programming models mention in the previous
+paragraph. This is problematic for several reasons. The programming
+models are not only different, they are different types of
+model. Languages, language extensions, libraries and directives, some
+are architecure specific. Worse, the interaction between them is
+outside the scope of any model\footnote{Whilst MPI has some level of
+  threaded awareness, this is limited.} and may for example depend on
+the batch scheduling system. The applications may require a different
+X for different architecures to the extent that different data layouts
+and loop nest order. All these parallel and performance feautures
+break the data abstraction of the separation of concerns between the
+maths/science code and architecture specific code. 
+
+This is problematic for several reasons 
 \section{\label{sec:lib}Infrastructure}.
 ESMF, YAXT, XIOS, pFunit? netcdf etc.
 
