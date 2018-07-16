@@ -57,7 +57,7 @@ In collaboration with academic partners, the Met Office is developing
 a new dynamical core, called Gung Ho~\cite{MELVIN2018342}. By
 employing a mixed Finite Element Method on an unstructured mesh, the
 new dynamical core is designed to maintain the scientific accuracy of
-the current Unified Model (UM) dycore (ENDGame~\cite{QJ:QJ2235}),
+the current Unified Model (UM) dynamical core (ENDGame~\cite{QJ:QJ2235}),
 whilst allowing improved scalability by avoiding the singular pole of
 the lon-lat grid. A new atmospheric model and software infrastructure,
 named LFRic after Lewis Fry Richardson, is being developed to host the
@@ -106,7 +106,7 @@ C/C++. Indeed, Fortran is commonly employed for weather and climate
 codes and can be considered a Domain Specific Language (DSL) for
 numerical computation. Using a such a high-level language, an
 algorithm is written to solve a mathematical problem without
-consideration for the processor archictecture. The compiler generates
+consideration for the processor architecture. The compiler generates
 machine specific instructions and can, in principle, make optimisation
 choices to exploit the architecture of different processors.
 
@@ -117,47 +117,46 @@ application to exploit a significant\footnote{What constitutes good
   performance depends on a variety of factors.} fraction of the peak
 performance of the processor. Whilst many science applications may
 contain code optimisations in performance critical sections, for
-example, blocking or tiling loop nests to bet utilise cache memory,
-the code, in general these applications have relied on clock
+example, blocking or tiling loop nests to better utilise cache memory,
+in general these applications have relied on clock
 speed increases between processor generations to increase performance.
 
-Processor speed increases between generation ceased more than a decade
-ago due to the abscence of Dennard scaling~\cite{dennard}. Instead,
-processors have had increasing numbers of processor cores per
-socket. Science applications had already adapted to run on mutliple
-node supercomputers with the distributed memory, data parallelism
+Processor speed increases between generations ceased more than a decade
+ago due to the absence of Dennard scaling~\cite{dennard}. Instead,
+successive generations of processors have had increasing numbers of processor cores per
+socket. Science applications have already been adapted to run on multiple
+nodes to exploit supercomputers with the distributed memory, data parallelism
 typical expressed over MPI. However, multi-core nodes present
 additional challenges and heterogenous compute nodes such as
 CPU + GPU with distinct memory spaces require additional programming
-models. Moreover, the algortithms employed combined with data
-parallelism may not be suffient to exploit this explosion of parallelism.
+models. Moreover, the algorithms employed combined with data
+parallelism may not be sufficient to exploit this explosion of parallelism.
 
 Many programming models exist, MPI and Partitioned Global Address
 Space (PGAS) languages, such as Co Array Fortran, Unified Parallel C,
 Chapel and GASPI for distributed memory, new programming languages such
 as OpenCL or CUDA and directive based programming models for threaded
 and shared memory parallelism such as OpenMP or OpenACC. However,
-the programming models lag the rapidily evolving computer
+the programming models lag behing the rapidly evolving computer
 architectures and particular models lack feature or processor coverage
 making the choice of programming model difficult. This is especially
-true for weather and climate applications with their long development
+problematic for weather and climate applications with their long development
 cycles. 
 
-Many applications have adopted an MPI + X model, where X is one
-or more of the programming models mention in the previous
-paragraph. This is problematic for several reasons. The programming
-models are not only different, they are different types of
-model. Languages, language extensions, libraries and directives, some
-are architecure specific. Worse, the interaction between them is
-outside the scope of any model\footnote{Whilst MPI has some level of
-  threaded awareness, this is limited.} and may for example depend on
-the batch scheduling system. The applications may require a different
-X for different architecures to the extent that different data layouts
-and loop nest order. All these parallel and performance feautures
+Many applications have adopted an MPI + X model, where X is one or
+more of the programming models mention in the previous paragraph. This
+is problematic for several reasons. The programming models are not
+only different, they are different types of model. Languages, language
+extensions, libraries and directives, some of which are architecture
+specific. Worse, the interaction between them is outside the scope of
+any model\footnote{Whilst MPI has some level of threaded awareness,
+  this is limited.} and may, for example, require the batch scheduling
+system to control this. The applications may require a different X for
+different architectures and even different data layouts and
+loop nest order. All these parallel and performance features
 break the data abstraction of the separation of concerns between the
-maths/science code and architecture specific code. 
+maths/science code and architecture specific code.
 
-This is problematic for several reasons 
 \section{\label{sec:lib}Infrastructure}.
 ESMF, YAXT, XIOS, pFunit? netcdf etc.
 
@@ -165,41 +164,135 @@ ESMF, YAXT, XIOS, pFunit? netcdf etc.
 The code generator.
 
 \section{\label{sec:Solver}Linear solvers and preconditioners}
-Iterative solvers for large sparse linear systems of equations are required in several places in the model. For example, since mass matrices in the finite element discretisation are not diagonal, they need to be inverted with a small number of iterations of a Krylov subspace method. More importantly, the semi-implicit timestepping approach requires the solution of a very large sparse system for all prognostic unknowns in each step of the non-linear Picard iteration. Since the system is ill-conditioned, it needs to be preconditioned efficiently. This is achieved by the (approximate) reduction to an elliptic system for the pressure, which is preconditioned with a tensor-product multigrid algorithm \cite{Borm2001} (see Section \ref{sec:preconditioner}). To increase efficiency, the pressure preconditioner can be wrapped in its own iterative solver for the Helmholtz system. Note that in contrast to the  approach already employed in the ENDGame model \cite{QJ:QJ2235}, an outer iteration over the full system is still required due to the non-diagonal nature of the finite element mass matrices. Altogether this results in a rather complex solver.
+Iterative solvers for large sparse linear systems of equations are
+required in several places in the model. For example, since mass
+matrices in the finite element discretisation are not diagonal, they
+need to be inverted with a small number of iterations of a Krylov
+subspace method. More importantly, the semi-implicit time-stepping
+approach requires the solution of a very large sparse system for all
+prognostic unknowns in each step of the non-linear Picard
+iteration. Since the system is ill-conditioned, it needs to be
+preconditioned efficiently. This is achieved by the (approximate)
+reduction to an elliptic system for the pressure, which is
+preconditioned with a tensor-product multigrid algorithm
+\cite{Borm2001} (see Section \ref{sec:preconditioner}). To increase
+efficiency, the pressure preconditioner can be wrapped in its own
+iterative solver for the Helmholtz system. Note that in contrast to
+the approach already employed in the ENDGame model \cite{QJ:QJ2235},
+an outer iteration over the full system is still required due to the
+non-diagonal nature of the finite element mass matrices. Altogether
+this results in a rather complex solver.
 \subsection{Solver infrastructure}
-To allow easy implementation of sophisticaed nested iterative solvers and preconditioners, a dedicated abstraction was developed by using advanced object oriented features of Fortran 2003. This approach follows similar design philosophies in widely used linear algebra libraries such as PETSc \cite{Balay1997,Balay2018} and DUNE-ISTL \cite{Blatt2007}. More specifically, the implementation in LFRic uses derived types which realise the following operations (see Fig. \ref{fig:class_hierarchy}, left):
+To allow easy implementation of sophisticated nested iterative solvers
+and preconditioners, a dedicated abstraction was developed by using
+advanced object oriented features of Fortran 2003. This approach
+follows similar design philosophies in widely used linear algebra
+libraries such as PETSc \cite{Balay1997,Balay2018} and DUNE-ISTL
+\cite{Blatt2007}. More specifically, the implementation in LFRic uses
+derived types which realise the following operations (see
+Fig. \ref{fig:class_hierarchy}, left):
 \begin{itemize}
-\item \textbf{Vector} types which support common linear algebra operations such as AXPY $y\mapsto y+\alpha x$ and dot products $x,y\mapsto s = \langle x,y\rangle$. The most important vector-type is \texttt{field\_vector}, which contains a collection of model fields.
+\item \textbf{Vector} types which support common linear algebra
+  operations such as AXPY $y\mapsto y+\alpha x$ and dot products
+  $x,y\mapsto s = \langle x,y\rangle$. The most important vector-type
+  is \texttt{field\_vector}, which contains a collection of model
+  fields.
 \item \textbf{Linear operator} types which implement the operation $x\mapsto y=Ax$ for vectors $x$ and $y$
 \item \textbf{Preconditioners} which approximately solve the system $Px=b$ for a
   given right hand side $b$ and some operator $P\approx A$
-\item \textbf{Iterative solvers} which solve the system $Ax=b$ with a Krylov-subspace method for a given right hand side $b$. Currently supported solvers include Conjugate Gradient, GMRES and BiCGStab.
+\item \textbf{Iterative solvers} which solve the system $Ax=b$ with a
+  Krylov-subspace method for a given right hand side $b$. Currently
+  supported solvers include Conjugate Gradient, GMRES and BiCGStab.
 \end{itemize}
 \begin{figure}
   \begin{center}
     \includegraphics[width=0.45\linewidth]{class_hierarchy.pdf}
     \hfill
     \includegraphics[width=0.45\linewidth]{class_concrete.pdf}
-    \caption{Derived class hierarchy for solvers and preconditioners in LFric (left) and conctrete implementation for the linear system in implicit timestepping (right).}
+    \caption{Derived class hierarchy for solvers and preconditioners
+      in LFRic (left) and concrete implementation for the linear
+      system in implicit time-stepping (right).}
     \label{fig:class_hierarchy}
   \end{center}
 \end{figure}
-Each of those types is derived from an abstract base type. The iterative solver types operate on generic vector types and are passed preconditioner and linear operator objects which adhere to the interface of their abstract base types.  This implies that only one instance of a particular Krylov method has to be implemented in the code. Apart from avoiding code duplication, this increases reliability and maintainability, since only one instance of each solver has to be developed and tested. In addition, it allows easy ``plug-and-play'' to explore the space of all possible solver/preconditioner combinations to achieve optimal performance.
+Each of those types is derived from an abstract base type. The
+iterative solver types operate on generic vector types and are passed
+preconditioner and linear operator objects which adhere to the
+interface of their abstract base types.  This implies that only one
+instance of a particular Krylov method has to be implemented in the
+code. Apart from avoiding code duplication, this increases reliability
+and maintainability, since only one instance of each solver has to be
+developed and tested. In addition, it allows easy ``plug-and-play'' to
+explore the space of all possible solver/preconditioner combinations
+to achieve optimal performance.
 
-To solve a particular problem, the user has to develop bespoke derived types for the corresponding linear operator and preconditioners. Note that the \texttt{apply()} methods of those derived types contain invoke kernels, which guarantees optimal performance of the entire model. For example, to construct a solver for the implicit linar system which is inverted in every semi-implicit timestep, the user implements the following objects (see Fig. \ref{fig:class_hierarchy}, right):
+To solve a particular problem, the user has to develop bespoke derived
+types for the corresponding linear operator and preconditioners. Note
+that the \texttt{apply()} methods of those derived types contain
+invoke kernels, which guarantees optimal performance of the entire
+model. For example, to construct a solver for the implicit linar
+system which is inverted in every semi-implicit time-step, the user
+implements the following objects (see Fig. \ref{fig:class_hierarchy},
+right):
 \begin{itemize}
-\item A linear operator type which applies the full linear system to all components of a \texttt{field\_vector}.
-\item A preconditioner type which reduces the full linear system to the (approximate) Schur complement in pressure space by lumping the velocity mass matrix; this preconditioner then calls the solver for the pressure (Helmholtz-) system.
-\item A linear operator type which applies the Helmholtz-operator for the pressure system.
-\item A preconditioner type which approximately inverts the Helmholtz operator (see section \ref{sec:preconditioner}).
+\item A linear operator type which applies the full linear system to
+  all components of a \texttt{field\_vector}.
+\item A preconditioner type which reduces the full linear system to
+  the (approximate) Schur complement in pressure space by lumping the
+  velocity mass matrix; this preconditioner then calls the solver for
+  the pressure (Helmholtz-) system.
+\item A linear operator type which applies the Helmholtz-operator for
+  the pressure system.
+\item A preconditioner type which approximately inverts the Helmholtz
+  operator (see section \ref{sec:preconditioner}).
 \end{itemize}
-Once implemented, those linear operators/preconditioners need to be passed to suitable existing linear solvers.
+Once implemented, those linear operators/preconditioners need to be
+passed to suitable existing linear solvers.
 
-In addition to this more traditional approximate Schur-complement approach for solving the full linear system, the development of solvers based on a hybridisation approach is currently explored. Since an exact Schur-complement can be formed in this case, hybridisation avoids the expensive iteration over the full linear system, and potentially leads to significant improvements in performance.
+In addition to this more traditional approximate Schur-complement
+approach for solving the full linear system, the development of
+solvers based on a hybridisation approach is currently explored. Since
+an exact Schur-complement can be formed in this case, hybridisation
+avoids the expensive iteration over the full linear system, and
+potentially leads to significant improvements in performance.
 \subsection{\label{sec:preconditioner}Preconditioner}
-To precondition the strongly anisotropic Helmholtz-operator for the pressure system, the tensor-product multigrid approach in \cite{Borm2001} is used in LFric. This is a more advanced solver than the current tridiagonal vertical-only preconditioner in the ENDGame model. The multigrid algorithm used in LFRic has been tested extensively for representative elliptic equations in atmospheric modelling in \cite{Mueller2014,Dedner2016}, including a mixed-finite element discretisation of a linear gravity wave system in \cite{Mitchell2016}. The key idea to address the strong vertical anisotropy due to the high-aspect ratio of the domain is to combine vertical-only smoothing (line relaxation) with a horizontal multigrid hierarchy. To allow the easy construction of the vertical-only operators in the Schur-complement from the finite element discretisation of the full equations, a suitable operator algebra was developed in \cite{Mitchell2016} and tested in the Firedrake library. For horizontally discontinuous function spaces (such as the pressure space and the vertical-only velocity), operators can be assembled into a partially assembled matrix type, which stores all couplings within one vertical column. Matrices of this type can be multiplied, added and, most importantly, inverted in the tridiagonal solvers which realises the vertical line relaxation. This allows the high-level construction of the building blocks required for the Helmholtz-solver and preconditioner. The same data structures were implemented as derived Fortran 2003 types in the LFric code and form the building blocks of the tensor-product multigrid preconditioner for the elliptic Helmholtz system.
+To precondition the strongly anisotropic Helmholtz-operator for the
+pressure system, the tensor-product multigrid approach in
+\cite{Borm2001} is used in LFRic. This is a more advanced solver than
+the current tridiagonal vertical-only preconditioner in the ENDGame
+model. The multigrid algorithm used in LFRic has been tested
+extensively for representative elliptic equations in atmospheric
+modelling in \cite{Mueller2014,Dedner2016}, including a mixed-finite
+element discretisation of a linear gravity wave system in
+\cite{Mitchell2016}. The key idea to address the strong vertical
+anisotropy due to the high-aspect ratio of the domain is to combine
+vertical-only smoothing (line relaxation) with a horizontal multigrid
+hierarchy. To allow the easy construction of the vertical-only
+operators in the Schur-complement from the finite element
+discretisation of the full equations, a suitable operator algebra was
+developed in \cite{Mitchell2016} and tested in the Firedrake
+library. For horizontally discontinuous function spaces (such as the
+pressure space and the vertical-only velocity), operators can be
+assembled into a partially assembled matrix type, which stores all
+couplings within one vertical column. Matrices of this type can be
+multiplied, added and, most importantly, inverted in the tridiagonal
+solvers which realises the vertical line relaxation. This allows the
+high-level construction of the building blocks required for the
+Helmholtz-solver and preconditioner. The same data structures were
+implemented as derived Fortran 2003 types in the LFRic code and form
+the building blocks of the tensor-product multigrid preconditioner for
+the elliptic Helmholtz system.
 
-Compared to simpler preconditioners, which do not combine vertical line relaxation with a horizontal multigrid hierarchy, the tensor-product multigrid approach typically reduces the solution time of the pressure system by a factor of at least two \cite{Mueller2014,Mitchell2016}. However, since the Helmholtz system contains a zero-order term, only a small number ($\approx 3-4$) of multigrid levels is required (independent of the grid resolution). This greatly increases scalability since it avoids global couplings which arise on the coarsest level.
+Compared to simpler preconditioners, which do not combine vertical
+line relaxation with a horizontal multigrid hierarchy, the
+tensor-product multigrid approach typically reduces the solution time
+of the pressure system by a factor of at least two
+\cite{Mueller2014,Mitchell2016}. However, since the Helmholtz system
+contains a zero-order term, only a small number ($\approx 3-4$) of
+multigrid levels is required (independent of the grid
+resolution). This greatly increases scalability since it avoids global
+couplings which arise on the coarsest level.
+
 \section{\label{sec:scal}Scaling}.
 Scaling, MPI and OpenMP etc.
 
