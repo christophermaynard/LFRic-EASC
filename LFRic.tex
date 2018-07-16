@@ -157,6 +157,21 @@ loop nest order. All these parallel and performance features
 break the data abstraction of the separation of concerns between the
 maths/science code and architecture specific code.
 
+The design for the LFRic model is based upon computational science
+report from phase 1 of the Gung Ho project~\cite{GHP1_CSR}. By
+employing a layered software architecture, the complex parallel code
+code can be kept separate from the science code. The software is
+separated into three layers. The top layer is the algorithm
+layer. Here, algorithms are expressed as operations on global,
+data-parallel field objects. The middle layer, termed the
+Parallelisation System or PSy layer contains the horizontal looping
+and is where the data parallelism is expressed.  
+
+\begin{figure}[]
+\centering\includegraphics[width=1.0\linewidth]{PSyKAl.pdf}
+\caption{\label{fig:psykal} Schematic diagram of the PSyKAl layered architecture.}
+\end{figure}
+
 \section{\label{sec:lib}Infrastructure}.
 ESMF, YAXT, XIOS, pFunit? netcdf etc.
 
