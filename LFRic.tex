@@ -17,7 +17,7 @@
 \author[bath]{E.H.~Mueller}
 \author[met]{S.~Mullerworth}
 \author[hartree]{A.~Porter}
-\author[downunder]{M.~Rezney}
+\author[downunder]{M.~Rezny}
 \author[met]{B.~Shipway}
 \author[met]{R.~Wong}
 
@@ -28,7 +28,7 @@
 \address[read]{Department of Computer Science, Polly Vacher Building,
   University of Reading, Reading, UK, RG6 6AY}
 \address[bath]{Department of Mathematics, University of Bath, Bath}
-\address[downunder]{University of Monash, Melbourne, Australia}
+\address[downunder]{Monash University, Australia}
 \address[hartree]{Hartree Centre, STFC Daresbury, Grim up North}
 
 \begin{abstract}
@@ -117,6 +117,81 @@ portabilty of science codes.
 
 \section{\label{sec:lib}Infrastructure}.
 ESMF, YAXT, XIOS, pFunit? netcdf etc.
+
+\subsection{\label{sec:io}Parallel I/O}
+
+A consequence of models running over many thousands of cores is a requirement
+for scalable parallel I/O. A computationally optimised model is of little practical
+operational use if I/O then becomes a limiting factor. The LFRic project has
+decided to investigate options for I/O alongside the computational
+and infrastructure development for three main reasons. Firstly, the requirement
+to be able to run science assessment jobs on large numbers of cores and obtain the
+output efficiently. Secondly, a key aim of LFRic is scalability and therefore it is
+helpful to be able to monitor the impact of I/O on this as the infrastructure and
+science develops. Thirdly, LFRic is making some fundamental changes that impact the
+underlying mesh and this links to I/O in terms of input / output file formats. Having
+a concrete idea of what these file formats will be in the future enables LFRic to
+inform future users internal and external to the Met Office.
+Although developing a bespoke I/O system was a possibility, the decision was
+made early on to adopt an existing parallel I/O framework and leverage knowledge and
+experience from the community; developing Earth System Models is becoming increasingly
+complex and challenging for any one organisation to develop and maintain all the required
+components~\cite{gmd-2017-186}.
+As of early 2016, when the first scoping work for LFRic parallel I/O was being done,
+there were several existing parallel I/O frameworks and XIOS was selected as the prime
+candidate for evaluation~\cite{XIOSWiki}. A discussion of the other frameworks and why
+they were not considered can be found in~\cite{Adams2018}.
+XIOS was an obvious choice for LFRic as it was a mature framework, having had many years
+of development and was already in use in the weather and climate domain. For example,
+the Orchidee land surface model, the Dynamico dynamical core (part of the LMD-Z
+Atmosphere model) and in the NEMO ocean model. NEMO is used in Met Office coupled
+models so there was some existing experience with XIOS. In terms of potential scalability,
+XIOS had also been proved to run successfully in models running on the order of 10,000
+cores. Crucially for climate models, XIOS works with the OASIS coupling framework that
+is commonly used in coupled climate models including the UM. 
+
+The key features of XIOS can be summarised as follows:
+\begin{enumerate}
+  \item Flexible definition of I/O workflows via external XML files
+  \item Client/Server architecture allowing asynchronous I/O servers on dedicated cores
+  \item Sophisticated "in situ" post-processing via workflows defined in the XML file(s) 
+\end{enumerate}
+
+XIOS is written in C++, but also provides a Fortran API to developers. It makes use of
+MPI-IO and the NetCDF4 and HDF5 libraries and handles unstructured and regular grids.
+XIOS is a client-server framework where I/O servers are asynchronous processes buffering
+output requests from client processes. XIOS also has sophisticated post-processing
+functionality - e.g. for regridding, time series, meaning. The output schedule and
+file format are defined by an XML file which hides a lot of complexity from the user.
+
+Prior to 2016, XIOS only supported read and write of NetCDF file formats that follow the CF
+conventions.  As previously explained in section~\ref{sec:GH}, the LFRic implementation uses
+semi-structured meshes and a FEM formulation, where variables are held on
+different elements of the mesh (nodes, edges or faces). Therefore, the I/O system needs to
+handle data structured in this way. The UGRID-NetCDF format has been chosen as the main
+LFRic input mesh format and also output format for diagnostics and model dumps~\cite{UgridSpec}.
+In the UGRID convention the topology of the underlying unstructured mesh is stored as well as
+data, and data can be defined on any of the mesh elements: nodes, edges, or faces.
+Working in collaboration with IPSL (Institut Pierre Simon LaPlace), the ability to write the
+UGRID format was added to XIOS in 2016 in order to support LFRic. 
+
+XIOS has been integrated into LFRic via a lightweight I/O interface so that (as far as
+possible) the underlying I/O framework is hidden and could be replaced by an alternative.
+The I/O interface is designed to be compatible with the use of Fortran 2003 Object
+Orientation in LFRic. The field object \textbf{(refer to relevant infrastructure section when 
+this is written)} contains read and write interface declarations that use Fortran 
+procedure pointers to define I/O 'behaviours'. When a field is created the behaviours
+are set by pointing to a specific reading or writing method. Writing a field just involves
+calling $field\%write\_field()$ - i.e. it is the responsibility of the field to write
+itself and how the writing is actually done is hidden.  
+
+More details of the experimental results of the LFRic-XIOS integration work can be
+found in~\cite{Adams2018} where preliminary results on I/O scalability (up to 13824 
+processors) and XIOS and Lustre performance tuning are presented. The conclusions of
+this work were that XIOS is an effective parallel I/O framework that was technically
+straightforward to integrate into the existing LFRic infrastructure via the XIOS
+Fortran interface. Scaling experiments showed that XIOS performance was scaleable with
+respect to increasing numbers of cores, even with minimal tuning.
 
 \section{\label{sec:Psyclone}PSyclone}.
 The code generator.
