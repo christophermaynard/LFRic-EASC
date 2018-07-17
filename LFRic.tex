@@ -309,7 +309,83 @@ Fortran interface. Scaling experiments showed that XIOS performance was scaleabl
 respect to increasing numbers of cores, even with minimal tuning.
 
 \section{\label{sec:psyclone}PSyclone}.
-The code generator.
+
+PSyclone~\cite{psyclone} is a domain-specific compiler which, given an
+Algorithm and associated Kernels, generates the code for the middle, PSy
+layer. Currently, each of these layers must be in Fortran as this
+remains a popular choice for scientific developers in the earth-system
+modelling domain. However, there is nothing in the approach to prevent
+other languages being targetted in future.
+
+\subsection{design}
+
+The architecture of the PSyclone system is shown in
+figure~\ref{fig:psyclone-arch}.
+
+\begin{figure}
+Rupert's flow diagram to go here.
+\caption{\label{fig:psyclone-arch}Schematic of the architecture of PSyclone.}
+\end{figure}
+
+APIs. What defines an API.
+
+Within the Algorithm layer, a developer specifies the computation that they
+would like to perform as a series of kernels, provided as arguments to a
+fictional `invoke` subroutine, e.g.:
+
+\begin{verbatim}
+use kernel1\_mod, only: kernel1
+...
+call invoke(kernel1(field1, field2), kernel2(field2, field3)) - Example from LFRic to go here.
+\end{verbatim}
+
+PSyclone identifies any invoke calls in the parsed Algorithm code and
+for each one extracts the list of kernels and their associated
+arguments.  The Fortran source for each kernel is then located (via
+the name of the module in the associated use statement) and parsed so as
+to obtain the meta-data for the kernel.
+
+
+\subsection{implementation}
+
+
+As already mentioned, our approach is heavily influenced by the OP2
+system~\citep{OP2, PYOP2}.
+In common with OP2, the {PS}y{KA}l approach separates out the science
+code and the performance-related code into distinct layers. The calls
+that specify parallelism in both approaches are similar in terms of
+where they are placed in the code and in their semantics. However, the
+{PS}y{KA}l approach supports the specification of more than one kernel
+in a parallel region of code, compared with one for OP2, giving more
+scope for optimisation. In addition, the metadata describing a kernel
+is included with the kernel code in the {PS}y{KA}l approach whereas it
+is provided as a part of the kernel call in OP2.
+
+In the {PS}y{KA}l approach there is an implicit assumption that the
+majority of the kernels in an application will be provided by the
+application developer. In the GridTools~\citep{grid_tools} and
+Firedrake~\citep{firedrake,fenics} approaches, the mathematical
+operations (finite-difference stencils and finite element operations,
+respectively) are specified in a high-level language by the
+user. Kernel code is then generated automatically. It is possible to
+optimise this generated code~\citep{coffee} and, in the case of
+GridTools, support both CPU and GPU architectures. This ability to
+generate kernels specific to a given computer architecture is a
+powerful feature. However, with this power comes the responsibility of
+providing domain scientists with the necessary functionality to
+describe all conceivable kernel operations as well as a programming
+interface with which they are comfortable.
+
+The {PS}y{KA}l, GridTools and Firedrake approaches are all based on
+the concept of (various flavours of) a Domain-Specific Language (DSL)
+for finite-difference and finite-element applications. This is
+distinct from other, lower-level abstractions such as
+Kokkos~\citep{kokkos} and OCCA~\citep{occa} where the aim is to
+provide a language that permits a user to implement a kernel just once
+and have it compile to performant code on a range of multi- and
+many-core devices. One could imagine using such abstractions to
+implement kernels for the {PS}y{KA}l, GridTools and Firedrake
+approaches rather than using e.g. OpenMP or CUDA directly.
 
 \section{\label{sec:Solver}Linear solvers and preconditioners}
 Iterative solvers for large sparse linear systems of equations are
