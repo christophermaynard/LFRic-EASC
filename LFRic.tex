@@ -327,32 +327,70 @@ other languages being targetted in future.
 
 \subsection{Design}
 
-The architecture of the PSyclone system is shown in
-figure~\ref{fig:psyclone-arch}.
+The language of the DSL which PSyclone compiles is embedded within
+Fortran and consists of two parts. The first is a way of specifying
+the computational kernels to be executed and in what order.
+The Algorithm developer provides this information by writing one or more
+calls to a fictional `invoke' subroutine with the desired kernels as
+arguments, e.g.:
+\begin{lstlisting}
+use kernel1_mod, only: kernel1_type
+...
+call invoke(kernel1_type(field1, field2), &
+            kernel2_type(field2, field3))
+\end{lstlisting}
+(This is valid Fortran because `\lstinline!kernel1_type(field1,field2)!' is
+actually a structure constructor.) Note that this Fortran
+is never actually compiled by a Fortran compiler (and hence `invoke'
+can be fictional). PSyclone will produce a modified version of this
+code with a call to a real, generated subroutine in the PSy layer.
+
+The second part of the language is a way of describing the
+requirements of each kernel (essentially inputs, outputs and iteration
+space). This information is provided as meta-data (again, valid Fortran)
+that must reside in the Fortran module containing the kernel source.
+
+Figure~\ref{fig:psyclone-arch} shows the data flow within the PSyclone
+architecture.  Starting from the left, the Algorithm is parsed (using
+fparser, a Python implementation of a Fortran parser) and any `invoke'
+calls identified. The list of kernels (and their arguments) associated
+with each of these calls is then stored. For each invoke, the Fortran
+modules containing the kernel code (as identified by \lstinline!use!
+statements) are parsed and the meta-data for each kernel extracted.
 
 \begin{figure}
 \centering\includegraphics[width=0.8\linewidth]{psyclone_flow.pdf}
-\caption{\label{fig:psyclone-arch}Schematic of the architecture of PSyclone.}
+\caption{\label{fig:psyclone-arch}Data flow within the PSyclone architecture.}
 \end{figure}
 
-APIs. What defines an API.
+PSyclone must then perform two tasks: first, generate an internal
+representation (`schedule') of a PSy-layer routine for each Invoke in
+the Algorithm and second, modify the supplied Algorithm code and
+replace each `call invoke' with a call to the corresponding routine in
+the PSy layer. This latter task is achieved by modifying the
+fparser-produced Abstract Syntax Tree (AST) of the Algorithm and then
+re-generating Fortran from the new AST.
 
-Within the Algorithm layer, a developer specifies the computation that they
-would like to perform as a series of kernels, provided as arguments to a
-fictional `invoke` subroutine, e.g.:
-
-\begin{verbatim}
-use kernel1\_mod, only: kernel1
-...
-call invoke(kernel1(field1, field2), kernel2(field2, field3)) - Example from LFRic to go here.
-\end{verbatim}
-
-PSyclone identifies any invoke calls in the parsed Algorithm code and
-for each one extracts the list of kernels and their associated
-arguments.  The Fortran source for each kernel is then located (via
-the name of the module in the associated use statement) and parsed so as
-to obtain the meta-data for the kernel.
-
+If no transformations are being applied to the PSy-layer schedule(s)
+then all that remains is to generate Fortran.
+The steps involved in generating a vanilla (un-optimised) PSy-layer
+subroutine are as follows:
+\begin{enumerate}
+\item Generate the unique list of arguments required by all kernels
+  in the Invoke;
+\item Generate Fortran which queries the LFRic infrastructure to get
+  information on the sizes of the various iteration spaces (number of cells,
+  vertical levels, dofs etc.);
+\item Generate Fortran which queries the LFRic infrastructure to get the various look-up
+  tables (e.g. for identifying the dofs belonging to a given cell);
+\item Generate Fortran which dereferences the various field and operator objects to get the
+  necessary data arrays;
+\item For each kernel:
+  \begin{itemize}
+    \item Generate a loop over the correct iteration space (cells or dofs);
+    \item Generate a call to the kernel subroutine with all necessary arguments.
+  \end{itemize}
+\end{enumerate}
 
 \subsection{Implementation}
 
@@ -463,15 +501,11 @@ DO cell=1,mesh%get_last_edge_cell()
     one, ndf_w3, undf_w3, map_w3(:,cell), ndf_w2, undf_w2, &
     map_w2(:,cell), ndf_wtheta, undf_wtheta, map_wtheta(:,cell))
 END DO 
-!
-! Set halos dirty/clean for fields modified in the above loop
-!
-CALL l_p_proxy%set_dirty()
 \end{lstlisting}
 Note that the generated code `unpacks' the derived types so as to
 provide raw arrays to the kernel subroutine. It also provides look-up
 tables (`maps') and dof counts for each of the function spaces used by
-the kernel.
+the kernel. 
 
 The kernel itself is then responsible for iterating over the cells
 within a column. For instance, a fragment of the
@@ -491,6 +525,12 @@ do k = 0, nlayers-1
 end do
 \end{lstlisting}
 where the outer loop is over levels in the extruded mesh.
+
+\begin{lstlisting}
+CALL invoke_7(grad_p, p, div_star, hb_inv, u_normalisation, l_p, &
+              mt_lumped_inv, compound_div, p3theta, ptheta2,   &
+              m3_exner_star, one)
+\end{lstlisting}
 
 Since the argument list of the kernel subroutine can
 quickly become long and complicated, PSyclone also provides a
