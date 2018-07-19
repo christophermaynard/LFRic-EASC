@@ -7,7 +7,8 @@
   basicstyle=\small,
   %identifierstyle=\color{green},
   commentstyle=\color{red},
-  keywordstyle=\color{blue}
+  keywordstyle=\color{blue},
+  showstringspaces=false
 }
 \begin{document}
 \begin{frontmatter}
@@ -354,7 +355,7 @@ Figure~\ref{fig:psyclone-arch} shows the data flow within the PSyclone
 architecture.  Starting from the left, the Algorithm is parsed (using
 fparser, a Python implementation of a Fortran parser) and any `invoke'
 calls identified. The list of kernels (and their arguments) associated
-with each of these calls is then stored. For each invoke, the Fortran
+with each of these calls is then stored. For each Invoke, the Fortran
 modules containing the kernel code (as identified by \lstinline!use!
 statements) are parsed and the meta-data for each kernel extracted.
 
@@ -371,10 +372,10 @@ the PSy layer. This latter task is achieved by modifying the
 fparser-produced Abstract Syntax Tree (AST) of the Algorithm and then
 re-generating Fortran from the new AST.
 
-If no transformations are being applied to the PSy-layer schedule(s)
-then all that remains is for the PSy generator to create Fortran code.
-The steps involved in generating a vanilla (un-optimised) PSy-layer
-subroutine are as follows:
+If no transformations are being applied (see below) to the PSy-layer
+schedule(s) then all that remains is for the PSy generator to create
+Fortran code.  The steps involved in generating a vanilla
+(un-optimised) PSy-layer subroutine are as follows:
 \begin{enumerate}
 \item Generate the unique list of arguments required by all kernels
   in the Invoke;
@@ -392,51 +393,90 @@ subroutine are as follows:
   \end{itemize}
 \end{enumerate}
 
+Since the Algorithm deals with global objects (fields, operators etc.)
+and a kernel deals with e.g. individual columns of cells, the PSy
+layer must also account for the fact that the global objects are in
+fact decomposed over MPI processes by the LFRic
+infrastructure. PSyclone must therefore ensure that the halos of any
+fields read by a given kernel are up-to-date before that kernel is
+executed. Initially this was implemented simply by generating code
+that, at runtime, marked any field written to by a kernel as having a
+dirty halo (using the LFRic infrastructure). Prior to each kernel call
+code was also inserted that, for each field with a halo access,
+performed a halo swap if the halo was dirty. Subsequently we have
+implemented dependence analysis and now insert in the schedule only
+those halo exchanges that are known to be required~\cite{psyclone}.
+
+The PSyclone approach and the {PS}y{KA}l separation of concerns is
+heavily influenced by the OP2 system~\citep{OP2, PYOP2}. The calls
+that specify parallelism in both approaches are similar in terms of
+where they are placed in the code and in their semantics. However, PSyclone
+supports the specification of more than one kernel
+in a parallel region of code, compared with one for OP2, giving more
+scope for optimisation. For a comparison of {PS}y{KA}l with other, similar
+approaches please see~\cite{nemolite2d_psykal}. 
+
 \subsection{Transformations}
 
-TBC after discussion with Chris about what performance results he's going to show.
+The large variety in existing computer architectures, the number of
+different compilers and the fact that all of these are constantly
+evolving means that it is simply not possible to write or generate a
+single source code that will be (and continue to be) performance
+portable~\cite{shallow_psykal, nemolite2d_psykal}.  It is also very
+difficult to create a system that is automatically able to create
+performant code for such a range of conditions. PSyclone therefore
+seeks to be a tool for the HPC expert, enabling them to apply the
+optimisations that, thanks to their experience and knowledge, they
+know to be beneficial for a particular architecture and/or compiler.
 
-Distributed memory - mainly refer to 'in preparation'.
+The application of optimisations is achieved by applying
+PSyclone-provided transformations to the schedule of an Invoke.  For
+instance, in order to parallelise a give schedule using OpenMP
+PSyclone provides transformations to create a parallel region and
+introduce various forms of work-sharing construct. Unfortunately,
+work-sharing of loops over cells for kernels which update quantities
+on horizontally-continuous function spaces will result in race
+conditions where multiple threads attempt to write to the same dof. It
+is therefore necessary to control the iteration space in order to
+prevent these race conditions and PSyclone provides a loop-colouring
+transformation for this purpose.
 
-\subsection{Implementation}
+Although PSyclone transformations may be applied within a Python
+interactive session, they will typically be used during the
+compilation phase of a potentially large application. Therefore,
+PSyclone allows (Python) transformation scripts to be supplied
+on the command line. As an example, the following simple script is sufficient
+to add OpenMP parallelism to the whole LFRic code base:
+\begin{lstlisting}[language=python]
+def trans(psy):
+    ''' Applies PSyclone colouring & OpenMP transformations. '''
+    ctrans = Dynamo0p3ColourTrans()
+    otrans = Dynamo0p3OMPLoopTrans()
+    oregtrans = OMPParallelTrans()
 
-As already mentioned, our approach is heavily influenced by the OP2
-system~\citep{OP2, PYOP2}.
-In common with OP2, the {PS}y{KA}l approach separates out the science
-code and the performance-related code into distinct layers. The calls
-that specify parallelism in both approaches are similar in terms of
-where they are placed in the code and in their semantics. However, the
-{PS}y{KA}l approach supports the specification of more than one kernel
-in a parallel region of code, compared with one for OP2, giving more
-scope for optimisation. In addition, the metadata describing a kernel
-is included with the kernel code in the {PS}y{KA}l approach whereas it
-is provided as a part of the kernel call in OP2.
+    # Loop over all of the Invokes in the PSy object
+    for invoke in psy.invokes.invoke_list:
 
-In the {PS}y{KA}l approach there is an implicit assumption that the
-majority of the kernels in an application will be provided by the
-application developer. In the GridTools~\citep{grid_tools} and
-Firedrake~\citep{firedrake,fenics} approaches, the mathematical
-operations (finite-difference stencils and finite element operations,
-respectively) are specified in a high-level language by the
-user. Kernel code is then generated automatically. It is possible to
-optimise this generated code~\citep{coffee} and, in the case of
-GridTools, support both CPU and GPU architectures. This ability to
-generate kernels specific to a given computer architecture is a
-powerful feature. However, with this power comes the responsibility of
-providing domain scientists with the necessary functionality to
-describe all conceivable kernel operations as well as a programming
-interface with which they are comfortable.
+        schedule = invoke.schedule
 
-The {PS}y{KA}l, GridTools and Firedrake approaches are all based on
-the concept of (various flavours of) a Domain-Specific Language (DSL)
-for finite-difference and finite-element applications. This is
-distinct from other, lower-level abstractions such as
-Kokkos~\citep{kokkos} and OCCA~\citep{occa} where the aim is to
-provide a language that permits a user to implement a kernel just once
-and have it compile to performant code on a range of multi- and
-many-core devices. One could imagine using such abstractions to
-implement kernels for the {PS}y{KA}l, GridTools and Firedrake
-approaches rather than using e.g. OpenMP or CUDA directly.
+        # Colour loops over cells unless they are on discontinuous
+        # spaces (W3, WTHETA and W2V) or over dofs
+        for loop in schedule.loops():
+            if loop.iteration_space == "cells" \
+                and loop.field_space.orig_name \
+                    not in DISCONTINUOUS_FUNCTION_SPACES:
+                schedule, _ = ctrans.apply(loop)
+
+        # Add OpenMP to loops unless they are over colours
+        for loop in schedule.loops():
+            if loop.loop_type != "colours":
+                schedule, _ = oregtrans.apply(loop)
+                schedule, _ = otrans.apply(loop, reprod=True)
+    return psy
+\end{lstlisting}
+Here, the `psy' object contains PSyclone's internal represenation of
+the PSy layer that it will generate. The script takes this, modifies
+it using transformations and then returns it.
 
 \subsection{Example}
 
@@ -531,17 +571,20 @@ end do
 \end{lstlisting}
 where the outer loop is over levels in the extruded mesh.
 
+Finally, the original Invoke call in the Algorithm is re-written as:
 \begin{lstlisting}
 CALL invoke_7(grad_p, p, div_star, hb_inv, u_normalisation, l_p, &
               mt_lumped_inv, compound_div, p3theta, ptheta2,   &
               m3_exner_star, one)
 \end{lstlisting}
+where `invoke\_7' is the name of the generated PSy-layer subroutine.
 
-Since the argument list of the kernel subroutine can
+Since the argument list of a kernel subroutine can
 quickly become long and complicated, PSyclone also provides a
 kernel-stub generator. Given some kernel meta-data, this tool
 generates a skeleton Fortran subroutine with all of the necessary
-arguments declared.
+arguments declared. The kernel developer then need only implement
+the body of the kernel.
 
 \section{\label{sec:Solver}Linear solvers and preconditioners}
 Iterative solvers for large sparse linear systems of equations are
