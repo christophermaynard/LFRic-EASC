@@ -1,6 +1,7 @@
 \documentclass[times]{elsarticle}
 \bibliographystyle{elsarticle-num}
 \usepackage{graphicx,colordvi}
+\usepackage{listings}
 \begin{document}
 \begin{frontmatter}
 
@@ -125,7 +126,7 @@ Processor speed increases between generations ceased more than a decade
 ago due to the absence of Dennard scaling~\cite{dennard}. Instead,
 successive generations of processors have had increasing numbers of processor cores per
 socket. Science applications have already been adapted to run on multiple
-nodes to exploit supercomputers with the distributed memory, data parallelism
+nodes to exploit supercomputers with the distributed memory and data parallelism
 typical expressed over MPI. However, multi-core nodes present
 additional challenges and heterogenous compute nodes such as
 CPU + GPU with distinct memory spaces require additional programming
@@ -229,6 +230,85 @@ important code generation function. In the algorithm layers, the calls
 to the invoke procedure are replaced with a specific prodcedure call
 to the PSy layer. The PSy layer code can then be optimised depending on
 the kernels in the invoke and the metadata. 
+
+\subsection{Implementation}
+The algorithm layer code is written in Fortran 2003. However, this
+code is not actually compiled, it is parsed and processed by PSyclone
+first. Most of the Fortran is left as written. The exception to this
+is the calls to the invoke procedure. This procecedure doesn't
+exist. The invoke means {\em execute these kernels looping over the horizontal
+mesh}. PSyclone can paralellise this horizontal looping with MPI,
+openMP or both. Shown in the code fragment below is an invoke
+procedure call from the algorithm layer.
+
+\begin{lstlisting}[language=Fortran]
+ call invoke(setval_c(v(m), 0.0_r_def), &
+             matrix_vector_kernel_type(v(m), s(m), mm), &
+             enforce_bc_kernel_type( v(m) ) )
+\end{lstlisting}
+
+There are three kernels in this invoke. The first \verb+setval_c+ is
+an example of a {\em point-wise} kernel. The same operation is applied
+to each degree of freedom so no FEM structure is required. In this
+case setting all the values of the field to the same scalar. This is
+operation generated in place in the PSy layer by PSyclone. The second
+kernel is written as a constructor call to the kernel, so that it is
+valid Fortran. The arguments to this call \verb+v+ and \verb+s+ are
+{\em fields} and \verb+mm+ is an {\em operator} in this case a mass
+matrix.
+\begin{lstlisting}[language=Fortran]
+          CALL invoke_56(v(m), s(m), mm)
+\end{lstlisting}
+
+\begin{lstlisting}[language=Fortran]
+ nlayers = v_proxy%vspace%get_nlayers()
+      !
+      ! Create a mesh object
+      !
+      mesh => v%get_mesh()
+      !
+      ! Look-up dofmaps for each function space
+      !
+      map_any_space_1_v => v_proxy%vspace%get_whole_dofmap()
+      map_any_space_2_s => s_proxy%vspace%get_whole_dofmap()
+      !
+      ! Initialise number of DoFs for any_space_1_v
+      !
+      ndf_any_space_1_v = v_proxy%vspace%get_ndf()
+      undf_any_space_1_v = v_proxy%vspace%get_undf()
+      !
+      ! Initialise number of DoFs for any_space_2_s
+      !
+      ndf_any_space_2_s = s_proxy%vspace%get_ndf()
+      undf_any_space_2_s = s_proxy%vspace%get_undf()
+      !
+      ! Call kernels and communication routines
+      !
+      DO df=1,v_proxy%vspace%get_last_dof_owned()
+        v_proxy%data(df) = 0.0_r_def
+      END DO 
+      !
+      ! Set halos dirty/clean for fields modified in the above loop
+      !
+      CALL v_proxy%set_dirty()
+      !
+      CALL v_proxy%halo_exchange(depth=1)
+      !
+      IF (s_proxy%is_dirty(depth=1)) THEN
+        CALL s_proxy%halo_exchange(depth=1)
+      END IF 
+      !
+      DO cell=1,mesh%get_last_halo_cell(1)
+        !
+        CALL matrix_vector_code(cell, nlayers, v_proxy%data, s_proxy%data, mm_proxy%ncell_3d, mm_proxy%local_stencil, ndf_any_space_1_v, undf_any_space_1_v, map_any_space_1_v(:,cell), ndf_any_space_2_s, undf_any_space_2_s, map_any_space_2_s(:,cell))
+      END DO 
+      !
+      ! Set halos dirty/clean for fields modified in the above loop
+      !
+      CALL v_proxy%set_dirty()
+      !
+      CALL v_proxy%halo_exchange(depth=1)
+\end{lstlisting}
 
 \section{\label{sec:lib}Infrastructure}.
 ESMF, YAXT, XIOS, pFunit? netcdf etc.
@@ -408,7 +488,7 @@ To precondition the strongly anisotropic Helmholtz-operator for the
 pressure system, the tensor-product multigrid approach in
 \cite{Borm2001} is used in LFRic. This is a more advanced solver than
 the current tridiagonal vertical-only preconditioner in the ENDGame
-model. The multigrid algorithm used in LFRic has been tested
+model. The multigrid algorithm currently being developed in LFRic has been tested
 extensively for representative elliptic equations in atmospheric
 modelling in \cite{Mueller2014,Dedner2016}, including a mixed-finite
 element discretisation of a linear gravity wave system in
