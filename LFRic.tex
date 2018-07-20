@@ -331,6 +331,39 @@ and the procedure call to the kernel itself. The arguments are simple
 scalars for sizes and loop counters, the data arrays and (for example)
 the indirection maps. 
 
+
+Shown in the code fragment below is the kernel metadata for the
+matrix-vector kernel invoked in the algorithm layer.
+\begin{lstlisting}[language=Fortran, numbers=left]
+type, public, extends(kernel_type) ::  &
+                    matrix_vector_kernel_type
+  private
+  type(arg_type) :: meta_args(3) = (/ &
+       arg_type(GH_FIELD,    GH_INC,  ANY_SPACE_1), &
+       arg_type(GH_FIELD,    GH_READ, ANY_SPACE_2), &
+       arg_type(GH_OPERATOR, GH_READ, ANY_SPACE_1, &
+       ANY_SPACE_2)  /)
+  integer :: iterates_over = CELLS
+contains
+  procedure, nopass ::matrix_vector_code
+end type
+\end{lstlisting}
+The metadata is embedded in Fortran so that no special comments or
+other mark-up is required. The access descripters shown above are key
+to deriving the appropriate rules for generating the code in the PSy
+layer. The \verb+arg_type+ has three components. Firstly, the type of
+the data object, in this case fields and operators\footnote{An
+  operator is a mapping between one space and another.}. Secondly, what is
+the data acess pattern, {\em i.e.} \verb+GH_INC+ means the data is
+incremented. Thirdly, which function space the data lives on. In this case, the
+kernel is general and can operate over any space, hence, the
+\verb+any_space_n+. Whilst the $n$ can be any, the function space of the
+first field must correspond to the first function space of the operator and the
+function space of second field must correspond to the second function
+space of the operator. 
+
+{\em loop fusion, OpenMP}. 
+
 \section{\label{sec:lib}Infrastructure}.
 ESMF, YAXT, XIOS, pFunit? netcdf etc.
 
