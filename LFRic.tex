@@ -190,11 +190,11 @@ kernels can only be called from the PSy layer with the unpacked data
 arrays, scalars for loop bounds and supporting arrays of both reals
 and integers for Finite Element Method over an unstructured mesh.
 These coding rules are enforced by using Fortran 2003 object
-orientation style to control the APIs. By restricting the domain of
-the problem from all numerical mathematics to only that required (in
-the first instance) to the Gung Ho dynamical core it is possible to
-constrain the parallelism to the PSy layer. By restoring the
-separation of concerns between the science code and the
+orientation coding style to control the APIs. By restricting the
+domain of the problem from all numerical mathematics to only that
+required (in the first instance) to the Gung Ho dynamical core it is
+possible to constrain the parallelism to the PSy layer. By restoring
+the separation of concerns between the science code and the
 parallel/optimisation code means in principle different programming
 models can be employed in the PSy layer without changing the science
 code. Moreover, the PSyKAl API can be thought of a Domain Specific
@@ -210,7 +210,7 @@ read, write, readwrite or increment. This information is embedded in
 Fortran as part of the kernel. Other information encoded in this way
 is the loop iterator (for example {\em cells}), whether the kernel
 operates on a field which lives on a specific function space, whether
-any of the fields live on common function spaces and for FEM kenrnels
+any of the fields live on common function spaces and for FEM kernels
 whether the kernel uses any basis functions. 
 
 The restricted domain, strict control of the APIs between layers and
@@ -220,16 +220,17 @@ rules. The code itself can then be automatically generated. This is
 done by a python code parser, transformer and code generator called
 PSyclone. More details of PSyclone itself can be found in
 section~\ref{sec:psyclone}. The generated code is mostly Fortran.
-These are calls to the LFRic infrastructure which might contain the MPI
-distributed memory parallelism and calls to the LFRic infrastructure to dereference the Fortran 2003
-objects, looping over the horizontal mesh elements and calling the
-kernels themselves. However, PSyclone can also perform transformations
-and target other progamming models such as OpenMP or OpenACC. PSyclone
-is then in effect a DSEL compiler. PSyclone also does one other
-important code generation function. In the algorithm layers, the calls
-to the invoke procedure are replaced with a specific prodcedure call
-to the PSy layer. The PSy layer code can then be optimised depending on
-the kernels in the invoke and the metadata. 
+These are calls to the LFRic infrastructure which might contain the
+MPI distributed memory parallelism and calls to the LFRic
+infrastructure to dereference the Fortran 2003 objects, looping over
+the horizontal mesh elements and calling the kernels
+themselves. However, PSyclone can also perform transformations and
+target other progamming models such as OpenMP or OpenACC. PSyclone is
+then in effect a DSEL compiler. PSyclone also does one other important
+code generation function. In the algorithm layers, the calls to the
+invoke procedure are replaced with a specific prodcedure call to the
+PSy layer. The PSy layer code can then be optimised depending on the
+kernels in the invoke and the metadata.
 
 \subsection{Implementation}
 The algorithm layer code is written in Fortran 2003. However, this
@@ -256,59 +257,79 @@ kernel is written as a constructor call to the kernel, so that it is
 valid Fortran. The arguments to this call \verb+v+ and \verb+s+ are
 {\em fields} and \verb+mm+ is an {\em operator} in this case a mass
 matrix.
+
+PSyclone replaces the code for invoke the kernels, with a call to a
+generated procedure in the PSy layer with the fields and operators as
+arguments. This is shown below
 \begin{lstlisting}[language=Fortran]
-          CALL invoke_56(v(m), s(m), mm)
+ CALL invoke_56(v(m), s(m), mm)
 \end{lstlisting}
 
-\begin{lstlisting}[language=Fortran]
+Shown below is a code fragment from the generated PSy layer from for
+the invoke shown above.
+\begin{lstlisting}[language=Fortran, numbers=left]
  nlayers = v_proxy%vspace%get_nlayers()
-      !
-      ! Create a mesh object
-      !
-      mesh => v%get_mesh()
-      !
-      ! Look-up dofmaps for each function space
-      !
-      map_any_space_1_v => v_proxy%vspace%get_whole_dofmap()
-      map_any_space_2_s => s_proxy%vspace%get_whole_dofmap()
-      !
-      ! Initialise number of DoFs for any_space_1_v
-      !
-      ndf_any_space_1_v = v_proxy%vspace%get_ndf()
-      undf_any_space_1_v = v_proxy%vspace%get_undf()
-      !
-      ! Initialise number of DoFs for any_space_2_s
-      !
-      ndf_any_space_2_s = s_proxy%vspace%get_ndf()
-      undf_any_space_2_s = s_proxy%vspace%get_undf()
-      !
-      ! Call kernels and communication routines
-      !
-      DO df=1,v_proxy%vspace%get_last_dof_owned()
-        v_proxy%data(df) = 0.0_r_def
-      END DO 
-      !
-      ! Set halos dirty/clean for fields modified in the above loop
-      !
-      CALL v_proxy%set_dirty()
-      !
-      CALL v_proxy%halo_exchange(depth=1)
-      !
-      IF (s_proxy%is_dirty(depth=1)) THEN
-        CALL s_proxy%halo_exchange(depth=1)
-      END IF 
-      !
-      DO cell=1,mesh%get_last_halo_cell(1)
-        !
-        CALL matrix_vector_code(cell, nlayers, v_proxy%data, s_proxy%data, mm_proxy%ncell_3d, mm_proxy%local_stencil, ndf_any_space_1_v, undf_any_space_1_v, map_any_space_1_v(:,cell), ndf_any_space_2_s, undf_any_space_2_s, map_any_space_2_s(:,cell))
-      END DO 
-      !
-      ! Set halos dirty/clean for fields modified in the above loop
-      !
-      CALL v_proxy%set_dirty()
-      !
-      CALL v_proxy%halo_exchange(depth=1)
+ !
+ ! Create a mesh object
+ !
+ mesh => v%get_mesh()
+ !
+ ! Look-up dofmaps for each function space
+ !
+ map_any_space_1_v => v_proxy%vspace%get_whole_dofmap()
+ map_any_space_2_s => s_proxy%vspace%get_whole_dofmap()
+ !
+ ! Initialise number of DoFs for any_space_1_v
+ !
+ ndf_any_space_1_v = v_proxy%vspace%get_ndf()
+ undf_any_space_1_v = v_proxy%vspace%get_undf()
+ !
+ ! Initialise number of DoFs for any_space_2_s
+ !
+ ndf_any_space_2_s = s_proxy%vspace%get_ndf()
+ undf_any_space_2_s = s_proxy%vspace%get_undf()
+ !
+ ! Call kernels and communication routines
+ !
+ DO df=1,v_proxy%vspace%get_last_dof_owned()
+   v_proxy%data(df) = 0.0_r_def
+ END DO 
+ !
+ ! Set halos dirty/clean for fields modified in the above loop
+ !
+ CALL v_proxy%set_dirty()
+ !
+ CALL v_proxy%halo_exchange(depth=1)
+ !
+ IF (s_proxy%is_dirty(depth=1)) THEN
+   CALL s_proxy%halo_exchange(depth=1)
+ END IF 
+ !
+ DO cell=1,mesh%get_last_halo_cell(1)
+   CALL matrix_vector_code(cell, nlayers, v_proxy%data, &
+      s_proxy%data, mm_proxy%ncell_3d, mm_proxy%local_stencil, &
+      df_any_space_1_v, undf_any_space_1_v, &
+      map_any_space_1_v(:,cell), &
+      ndf_any_space_2_s, undf_any_space_2_s, &
+      map_any_space_2_s(:,cell))
+  END DO 
+  !
+  ! Set halos dirty/clean for fields modified in the above loop
+  !
+  CALL v_proxy%set_dirty()
+  !
+  CALL v_proxy%halo_exchange(depth=1)
 \end{lstlisting}
+Lines 1-20 are the calls to the LFRic infrastructure to pull out
+sizes, loop counters, and the indirection maps for the unstructured
+mesh. Lines 24-26 are the builtin function generated in place in the
+PSy layer for a point-wise operation. Lines 30-36 are the distributed
+memory calls to the infrastructure for a halo exchange and
+testing/setting flags to indicate whether a halo (and to what depth)
+has been updated. Lines 38-45 are the looping over the horizontal mesh
+and the procedure call to the kernel itself. The arguments are simple
+scalars for sizes and loop counters, the data arrays and (for example)
+the indirection maps. 
 
 \section{\label{sec:lib}Infrastructure}.
 ESMF, YAXT, XIOS, pFunit? netcdf etc.
