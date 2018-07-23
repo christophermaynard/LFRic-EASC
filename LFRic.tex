@@ -77,7 +77,7 @@ expressed. This abstraction, called PSyKAl, is written in Fortran with Fortran 2
 Object Orientation to encode the rules of the API.
 Moreover, a Python code called Psyclone can parse the algorithm and kernel layers and
 generate the Psy layer with different target programming models. In effect, the PSyKAl API
-and Psyclone are a Domain Specific Embedded Language (DESL). Natural science code which
+and Psyclone are a Domain Specific Embedded Language (DSEL). Natural science code which
 conforms to this API can be written in serial and the parallel code is then generated automatically.
 
 The model is under active development and indeed, the science and
@@ -87,14 +87,15 @@ computationally challenging problems must be tackled. Thus, the
 ability to generate optimisations for current architectures is also
 required. 
 
-The paper is organised as follows, the Gung Ho dynamical core and
-computational aspects are presented in section~\ref{sec:GH}. The
-software design for the separation of concerns and PSKAl API are described 
-are described in section~\ref{sec:SoC}. The model infrastructure and
-use of libraries is discussed in section~\ref{sec:lib}. PSyclone, the
-code generator is presented in section~\ref{sec:psyclone}. Finally a
-scaling analysis is presented in section~\ref{sec:scal} and
-conclusions drawn in section~\ref{sec:con}.
+The paper describes the model development and is organised as follows,
+the Gung Ho dynamical core and computational aspects are presented in
+section~\ref{sec:GH}. The software design for the separation of
+concerns and PSKAl API are described are described in
+section~\ref{sec:SoC}. The model infrastructure and use of libraries
+is discussed in section~\ref{sec:lib}. PSyclone, the code generator is
+presented in section~\ref{sec:psyclone}. Finally a scaling analysis is
+presented in section~\ref{sec:scal} and conclusions drawn in
+section~\ref{sec:con}.
 
 \section{\label{sec:GH}Gung Ho}
 A bit about Gung Ho, but mostly the unstructured mesh, quads, 2+1D
@@ -125,7 +126,7 @@ speed increases between processor generations to increase performance.
 Processor speed increases between generations ceased more than a decade
 ago due to the absence of Dennard scaling~\cite{dennard}. Instead,
 successive generations of processors have had increasing numbers of processor cores per
-socket. Science applications have already been adapted to run on multiple
+socket. Science applications typically have already been adapted to run on multiple
 nodes to exploit supercomputers with the distributed memory and data parallelism
 typical expressed over MPI. However, multi-core nodes present
 additional challenges and heterogenous compute nodes such as
@@ -140,12 +141,12 @@ as OpenCL or CUDA and directive based programming models for threaded
 and shared memory parallelism such as OpenMP or OpenACC. However,
 the programming models lag behind in development of the rapidly evolving computer
 architectures and particular models lack feature or processor coverage
-making the choice of programming model difficult. This is especially
-problematic for weather and climate applications with their long development
+making the choice of programming model difficult. This is ambiguity is
+especially difficult for weather and climate applications with their long development
 cycles. 
 
 Many applications have adopted an MPI + X model, where X is one or
-more of the programming models mention in the previous paragraph. This
+more of the programming models mentioned in the previous paragraph. This
 is problematic for several reasons. The programming models are not
 only different, they are different types of model. Languages, language
 extensions, libraries and directives, some of which are architecture
@@ -226,11 +227,11 @@ infrastructure to dereference the Fortran 2003 objects, looping over
 the horizontal mesh elements and calling the kernels
 themselves. However, PSyclone can also perform transformations and
 target other progamming models such as OpenMP or OpenACC. PSyclone is
-then in effect a DSEL compiler. PSyclone also does one other important
-code generation function. In the algorithm layers, the calls to the
-invoke procedure are replaced with a specific prodcedure call to the
-PSy layer. The PSy layer code can then be optimised depending on the
-kernels in the invoke and the metadata.
+then in effect a Domain Specific Embedded compiler. PSyclone also does
+one other important code generation function. In the algorithm layers,
+the calls to the invoke procedure are replaced with a specific
+prodcedure call to the PSy layer. The PSy layer code can then be
+optimised depending on the kernels in the invoke and the metadata.
 
 \subsection{Implementation}
 The algorithm layer code is written in Fortran 2003. However, this
@@ -353,8 +354,8 @@ other mark-up is required. The access descripters shown above are key
 to deriving the appropriate rules for generating the code in the PSy
 layer. The \verb+arg_type+ has three components. Firstly, the type of
 the data object, in this case fields and operators\footnote{An
-  operator is a mapping between one space and another.}. Secondly, what is
-the data acess pattern, {\em e.g.} \verb+GH_INC+ means the data is
+  operator is a mapping between one function space and another.}. Secondly, what is
+the data acess pattern for this data object, {\em e.g.} \verb+GH_INC+ means the data is
 incremented. Thirdly, which function space the data lives on. In this case, the
 kernel is general and can operate over any space, hence, the
 \verb+any_space_n+. Whilst the $n$ can be any, the function space of the
@@ -366,7 +367,7 @@ space of the operator.
 
 \section{\label{sec:lib}Infrastructure}
 
-As has been shown in figure~\ref{fig:psykal}, the PSyKAl layered
+As shown in figure~\ref{fig:psykal}, the PSyKAl layered
 architecture is supported by the LFRic infrastructure. This provides
 functionality such as distributed memory support (halo exchanges),
 colouring for OpenMP threading and the provision of loop bounds that the
@@ -509,6 +510,7 @@ science develops. Thirdly, LFRic is making some fundamental changes that impact 
 underlying mesh and this links to I/O in terms of input / output file formats. Having
 a concrete idea of what these file formats will be in the future enables LFRic to
 inform future users internal and external to the Met Office.
+
 Although developing a bespoke I/O system was a possibility, the decision was
 made early on to adopt an existing parallel I/O framework and leverage knowledge and
 experience from the community; developing Earth System Models is becoming increasingly
@@ -518,6 +520,7 @@ As of early 2016, when the first scoping work for LFRic parallel I/O was being d
 there were several existing parallel I/O frameworks and XIOS was selected as the prime
 candidate for evaluation~\cite{XIOSWiki}. A discussion of the other frameworks and why
 they were not considered can be found in~\cite{Adams2018}.
+
 XIOS was an obvious choice for LFRic as it was a mature framework, having had many years
 of development and was already in use in the weather and climate domain. For example,
 the Orchidee land surface model, the Dynamico dynamical core (part of the LMD-Z
@@ -552,15 +555,17 @@ data, and data can be defined on any of the mesh elements: nodes, edges, or face
 Working in collaboration with IPSL (Institut Pierre Simon LaPlace), the ability to write the
 UGRID format was added to XIOS in 2016 in order to support LFRic. 
 
-XIOS has been integrated into LFRic via a lightweight I/O interface so that (as far as
-possible) the underlying I/O framework is hidden and could be replaced by an alternative.
-The I/O interface is designed to be compatible with the use of Fortran 2003 Object
-Orientation in LFRic. The field object \textbf{(refer to relevant infrastructure section when 
-this is written)} contains read and write interface declarations that use Fortran 
-procedure pointers to define I/O 'behaviours'. When a field is created the behaviours
-are set by pointing to a specific reading or writing method. Writing a field just involves
-calling $field\%write\_field()$ - i.e. it is the responsibility of the field to write
-itself and how the writing is actually done is hidden.  
+XIOS has been integrated into LFRic via a lightweight I/O interface so
+that (as far as possible) the underlying I/O framework is hidden and
+could be replaced by an alternative.  The I/O interface is designed to
+be compatible with the use of Fortran 2003 Object Orientation in
+LFRic. The field object (see figure~\ref{fig:objects}) contains read and write
+interface declarations that use Fortran procedure pointers to define
+I/O 'behaviours'. When a field is created the behaviours are set by
+pointing to a specific reading or writing method. Writing a field just
+involves calling \verb+field%write_field()+ - {\em i.e.}, it is the
+responsibility of the field to write itself and how the writing is
+actually done is hidden.
 
 More details of the experimental results of the LFRic-XIOS integration work can be
 found in~\cite{Adams2018} where preliminary results on I/O scalability (up to 13824 
@@ -639,7 +644,7 @@ to achieve optimal performance.
 To solve a particular problem, the user has to develop bespoke derived
 types for the corresponding linear operator and preconditioners. Note
 that the \texttt{apply()} methods of those derived types contain
-invoke kernels, which guarantees optimal performance of the entire
+invoke calls to kernels, which guarantees optimal performance of the entire
 model. For example, to construct a solver for the implicit linar
 system which is inverted in every semi-implicit time-step, the user
 implements the following objects (see Fig. \ref{fig:class_hierarchy},
