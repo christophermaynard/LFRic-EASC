@@ -1,3 +1,13 @@
+@InProceedings{Adams2018,
+Author = {Adams, S.V. and Abramkina, O. and Meurdesoif, Y. and Rezny, M.},
+Title = {Parallel IO in the LFRic Infrastructure},
+Booktitle = {Parallel Computing is Everywhere},
+Editor = {Bassini, S. and Danelutto, M. and Dazzi, P. and Joubert, G,R. and Peters, F.},
+Pages = {485--494},
+Publisher = {IOS Press},
+Year = {2018}
+}
+
 @Article{gmd-2017-186,
 AUTHOR = {Lawrence, B. N. and Rezny, M. and Budich, R. and Bauer, P. and Behrens, J. and Carter, M. and Deconinck, W. and Ford, R. and Maynard, C. and Mullerworth, S. and Osuna, C. and Porter, A. and Serradell, K. and Valcke, S. and Wedi, N. and Wilson, S.},
 TITLE = {Crossing the Chasm: How to develop weather and climate models for next generation computers?},
@@ -38,6 +48,30 @@ doi = "https://doi.org/10.1016/j.jcp.2017.11.019",
 url = "http://www.sciencedirect.com/science/article/pii/S0021999117308574",
 author = "Thomas Melvin",
 keywords = "Spectral elements, Energy propagation, Group velocity, Staggered elements, Dynamical core"
+}
+
+@misc{ESMFDocs,
+  title = {ESMF Documentation},
+  howpublished = {\url{https://www.earthsystemcog.org/projects/esmfs}},
+  note = {Accessed: 2018-07-23}
+}
+
+@misc{YAXTDocs,
+  title = {YAXT Documentation},
+  howpublished = {\url{https://www.dkrz.de/redmine/projects/yaxt}},
+  note = {Accessed: 2018-07-20}
+}
+
+@misc{UgridSpec,
+  title = {UGRID Convention V1.0},
+  howpublished = {\url{http://ugrid-conventions.github.io/ugrid-conventions}},
+  note = {Accessed: 2018-07-16}
+}
+
+@misc{XIOSWiki,
+  title = {XIOS wiki},
+  howpublished = {\url{http://forge.ipsl.jussieu.fr/ioserver}},
+  note = {Accessed: 2018-07-16}
 }
 
 @Misc{Balay2018,
@@ -176,3 +210,87 @@ eprint = {https://doi.org/10.1175/1520-0493(1996)124<2588:CEUTSM>2.0.CO;2}
   volume = {138},
   pages = {1-26},  
   year = 2012 }
+
+@techreport{GHP1_CSR,
+  title={GungHo Phase 1: Computational Science Recommendations"},
+  author={R. Ford and M. Glover and D. Ham and C.M. Maynard and S. Pickles and G. Riley},
+  year={2013},
+  institution={Met Office},
+  type={Technical Report}
+}
+
+@ARTICLE{dennard, 
+author={R. H. Dennard and F. H. Gaensslen and V. L. Rideout and E. Bassous and A. R. LeBlanc}, 
+journal={IEEE Journal of Solid-State Circuits}, 
+title={Design of ion-implanted MOSFET's with very small physical dimensions}, 
+year={1974}, 
+volume={9}, 
+number={5}, 
+pages={256-268}, 
+keywords={Digital integrated circuits;Field effect transistors;Ion implantation;Semiconductor device manufacture;Switching circuits;digital integrated circuits;field effect transistors;ion implantation;semiconductor device manufacture;switching circuits;Digital integrated circuits;Doping profiles;Fabrication;Ion implantation;Length measurement;MOSFET circuits;Predictive models;Semiconductor process modeling;Switching circuits;Threshold voltage}, 
+doi={10.1109/JSSC.1974.1050511}, 
+ISSN={0018-9200}, 
+month={Oct},}
+
+@inproceedings{PYOP2,
+ author = {Rathgeber, F. and Markall, G.~R. and Mitchell, L. and Loriant, N. and Ham, D. A. and Bertolli, C. and Kelly, P. H. J.},
+ title = {PyOP2: A High-Level Framework for Performance-Portable Simulations on Unstructured Meshes},
+ booktitle = {Proceedings of the 2012 SC Companion: High Performance Computing, Networking Storage and Analysis},
+ series = {SCC '12},
+ year = {2012},
+ isbn = {978-0-7695-4956-9},
+ pages = {1116--1123},
+ numpages = {8},
+ url = {http://dx.doi.org/10.1109/SC.Companion.2012.134},
+ doi = {10.1109/SC.Companion.2012.134},
+ acmid = {2476885},
+ publisher = {IEEE Computer Society},
+ address = {Washington, DC, USA},
+ keywords = {domain-specific languages, high-level frameworks, finite-element methods, generative metaprogramming, code generation, performance portability, just-in-time compilation},
+}
+
+%editor={Alexander, Michael and D’Ambra, Pasqua and Belloum, Adam and Bosilca, George and Cannataro, Mario and Danelutto, Marco and Di Martino, Beniamino and Gerndt, Michael and Jeannot, Emmanuel and Namyst, Raymond and Roman, Jean and Scott, StephenL. and Traff, JesperLarsson and Vallée, Geoffroy and Weidendorfer, Josef},
+%doi={10.1007/978-3-642-29737-3_22},
+%url="http://dx.doi.org/10.1007/978-3-642-29737-3_22",
+
+@incollection{OP2,
+year={2012},
+isbn={978-3-642-29736-6},
+booktitle={Euro-Par 2011: Parallel Processing Workshops},
+volume={7155},
+series={Lecture Notes in Computer Science},
+editor={Alexander, Michael et al.},
+title={Design and Performance of the OP2 Library for Unstructured Mesh Applications},
+publisher={Springer Berlin Heidelberg},
+author={Bertolli, Carlo and Betts, Adam and Mudalige, Gihan and Giles, Mike and Kelly, Paul},
+pages={191-200},
+language={English}
+}
+
+@article{psyclone,
+author={R. W. Ford and A. R. Porter},
+title={PSyclone: a Domain-Specific Compiler for Finite-Element/Volume/Difference Earth-System Models},
+notes={In preparation},
+year={2018}
+}
+
+@inproceedings{shallow_psykal,
+   author = "A. R. Porter and R. W. Ford and M. Ashworth and G. D. Riley and M. Modani",
+   title  = "Towards Compiler-Agnostic Performance in Finite-Difference Codes",
+   booktitle = "Parallel Computing: On the Road to Exascale",
+   editor = "Gerhard R. Joubert and Hugh Leather and Mark Parsons and Frans Peters and Mark Sawyer",
+   volume = "27",
+   pages = {647--658},
+   publisher = "IOS Press",
+   address = "Amsterdam, New York, Tokyo",
+   year = "2016"
+}
+
+@article{nemolite2d_psykal,
+  author={A. R. Porter and J. Appleyard and M. Ashworth and R. W. Ford and J. Holt and H. Liu and G. Riley},
+  title={Portable Multi- and Many-Core Performance for Finite-Difference/Element Codes; Application to the Free-Surface Component of NEMO (NEMOLite2D 1.0)},
+  journal={Geoscientific Model Development},
+  year={2018},
+  notes={Accepted for publication}
+}
+

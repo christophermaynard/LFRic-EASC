@@ -3,6 +3,15 @@
 \usepackage{graphicx,colordvi}
 \usepackage{bm}
 \usepackage{subfig}
+\usepackage{xcolor}
+\usepackage{listings}
+\lstset{language=[08]Fortran,
+  basicstyle=\small,
+  %identifierstyle=\color{green},
+  commentstyle=\color{red},
+  keywordstyle=\color{blue},
+  showstringspaces=false
+}
 
 \providecommand{\tabularnewline}{\\}
 
@@ -12,7 +21,7 @@
 \title{LFRic and PSyclone: Building a Domain Specific Language for Weather and Climate models}
 
 \author[met]{S.~Adams}
-\author[hartree]{R.~Ford}
+\author[hartree]{R.~W.~Ford}
 \author[met]{M.~Hambley}
 \author[met]{J.M.~Hobson}
 \author[met]{I.~Kavcic}
@@ -21,7 +30,7 @@
 \author[met]{T.~Melvin}
 \author[bath]{E.H.~Mueller}
 \author[met]{S.~Mullerworth}
-\author[hartree]{A.~Porter}
+\author[hartree]{A.~R.~Porter}
 \author[downunder]{M.~Rezny}
 \author[met]{B.~Shipway}
 \author[met]{R.~Wong}
@@ -30,11 +39,11 @@
 
 
 \address[met]{Met Office, FitzRoy Road, Exeter, EX1 3PB}
+\address[hartree]{Hartree Centre, STFC Daresbury, Grim up North}
 \address[read]{Department of Computer Science, Polly Vacher Building,
   University of Reading, Reading, UK, RG6 6AY}
 \address[bath]{Department of Mathematics, University of Bath, Bath}
 \address[downunder]{Monash University, Melbourne, Australia}
-\address[hartree]{Hartree Centre, STFC Daresbury, Grim up North}
 
 \begin{abstract}
 \end{abstract}
@@ -81,7 +90,7 @@ expressed. This abstraction, called PSyKAl, is written in Fortran with Fortran 2
 Object Orientation to encode the rules of the API.
 Moreover, a Python code called Psyclone can parse the algorithm and kernel layers and
 generate the Psy layer with different target programming models. In effect, the PSyKAl API
-and Psyclone are a Domain Specific Embedded Language (DESL). Natural science code which
+and Psyclone are a Domain Specific Embedded Language (DSEL). Natural science code which
 conforms to this API can be written in serial and the parallel code is then generated automatically.
 
 The model is under active development and indeed, the science and
@@ -91,14 +100,15 @@ computationally challenging problems must be tackled. Thus, the
 ability to generate optimisations for current architectures is also
 required. 
 
-The paper is organised as follows, the GungHo dynamical core and
-computational aspects are presented in section~\ref{sec:GH}. The
-software design for the separation of concerns and PSKAl API are described 
-are described in section~\ref{sec:SoC}. The model infrastructure and
-use of libraries is discussed in section~\ref{sec:lib}. PSyclone, the
-code generator is presented in section~\ref{sec:Psyclone}. Finally a
-scaling analysis is presented in section~\ref{sec:scal} and
-conclusions drawn in section~\ref{sec:con}.
+The paper describes the model development and is organised as follows,
+the GungHo dynamical core and computational aspects are presented in
+section~\ref{sec:GH}. The software design for the separation of
+concerns and PSKAl API are described are described in
+section~\ref{sec:SoC}. The model infrastructure and use of libraries
+is discussed in section~\ref{sec:lib}. PSyclone, the code generator is
+presented in section~\ref{sec:psyclone}. Finally a scaling analysis is
+presented in section~\ref{sec:scal} and conclusions drawn in
+section~\ref{sec:con}.
 
 \section{\label{sec:GH}GungHo}
 
@@ -303,8 +313,8 @@ speed increases between processor generations to increase performance.
 Processor speed increases between generations ceased more than a decade
 ago due to the absence of Dennard scaling~\cite{dennard}. Instead,
 successive generations of processors have had increasing numbers of processor cores per
-socket. Science applications have already been adapted to run on multiple
-nodes to exploit supercomputers with the distributed memory, data parallelism
+socket. Science applications typically have already been adapted to run on multiple
+nodes to exploit supercomputers with the distributed memory and data parallelism
 typical expressed over MPI. However, multi-core nodes present
 additional challenges and heterogenous compute nodes such as
 CPU + GPU with distinct memory spaces require additional programming
@@ -318,12 +328,12 @@ as OpenCL or CUDA and directive based programming models for threaded
 and shared memory parallelism such as OpenMP or OpenACC. However,
 the programming models lag behind in development of the rapidly evolving computer
 architectures and particular models lack feature or processor coverage
-making the choice of programming model difficult. This is especially
-problematic for weather and climate applications with their long development
+making the choice of programming model difficult. This is ambiguity is
+especially difficult for weather and climate applications with their long development
 cycles. 
 
 Many applications have adopted an MPI + X model, where X is one or
-more of the programming models mention in the previous paragraph. This
+more of the programming models mentioned in the previous paragraph. This
 is problematic for several reasons. The programming models are not
 only different, they are different types of model. Languages, language
 extensions, libraries and directives, some of which are architecture
@@ -368,11 +378,11 @@ kernels can only be called from the PSy layer with the unpacked data
 arrays, scalars for loop bounds and supporting arrays of both reals
 and integers for Finite Element Method over an unstructured mesh.
 These coding rules are enforced by using Fortran 2003 object
-orientation style to control the APIs. By restricting the domain of
-the problem from all numerical mathematics to only that required (in
-the first instance) to the GungHo dynamical core it is possible to
-constrain the parallelism to the PSy layer. By restoring the
-separation of concerns between the science code and the
+orientation coding style to control the APIs. By restricting the
+domain of the problem from all numerical mathematics to only that
+required (in the first instance) to the GungHo dynamical core it is
+possible to constrain the parallelism to the PSy layer. By restoring
+the separation of concerns between the science code and the
 parallel/optimisation code means in principle different programming
 models can be employed in the PSy layer without changing the science
 code. Moreover, the PSyKAl API can be thought of a Domain Specific
@@ -398,22 +408,656 @@ rules. The code itself can then be automatically generated. This is
 done by a python code parser, transformer and code generator called
 PSyclone. More details of PSyclone itself can be found in
 section~\ref{sec:psyclone}. The generated code is mostly Fortran.
-These are calls to the LFRic infrastructure which might contain the MPI
-distributed memory parallelism and calls to the LFRic infrastructure to dereference the Fortran 2003
-objects, looping over the horizontal mesh elements and calling the
-kernels themselves. However, PSyclone can also perform transformations
-and target other progamming models such as OpenMP or OpenACC. PSyclone
-is then in effect a DSEL compiler. PSyclone also does one other
-important code generation function. In the algorithm layers, the calls
-to the invoke procedure are replaced with a specific prodcedure call
-to the PSy layer. The PSy layer code can then be optimised depending on
-the kernels in the invoke and the metadata. 
+These are calls to the LFRic infrastructure which might contain the
+MPI distributed memory parallelism and calls to the LFRic
+infrastructure to dereference the Fortran 2003 objects, looping over
+the horizontal mesh elements and calling the kernels
+themselves. However, PSyclone can also perform transformations and
+target other progamming models such as OpenMP or OpenACC. PSyclone is
+then in effect a Domain Specific Embedded compiler. PSyclone also does
+one other important code generation function. In the algorithm layers,
+the calls to the invoke procedure are replaced with a specific
+prodcedure call to the PSy layer. The PSy layer code can then be
+optimised depending on the kernels in the invoke and the metadata.
 
-\section{\label{sec:lib}Infrastructure}.
-ESMF, YAXT, XIOS, pFunit? netcdf etc.
+\subsection{Implementation}
+The algorithm layer code is written in Fortran 2003. However, this
+code is not actually compiled, it is parsed and processed by PSyclone
+first. Most of the Fortran is left as written. The exception to this
+is the calls to the invoke procedure. This procecedure doesn't
+exist. The invoke means {\em execute these kernels looping over the horizontal
+mesh}. PSyclone can paralellise this horizontal looping with MPI,
+openMP or both. Shown in the code fragment below is an invoke
+procedure call from the algorithm layer.
 
-\section{\label{sec:psyclone}PSyclone}.
-The code generator.
+\begin{lstlisting}[language=Fortran]
+ call invoke(setval_c(v(m), 0.0_r_def), &
+             matrix_vector_kernel_type(v(m), s(m), mm), &
+             enforce_bc_kernel_type( v(m) ) )
+\end{lstlisting}
+
+There are three kernels in this invoke. The first \verb+setval_c+ is
+an example of a {\em point-wise} kernel. The same operation is applied
+to each degree of freedom so no FEM structure is required. In this
+case setting all the values of the field to the same scalar. This is
+operation generated in place in the PSy layer by PSyclone. The second
+kernel is written as a constructor call to the kernel, so that it is
+valid Fortran. The arguments to this call \verb+v+ and \verb+s+ are
+{\em fields} and \verb+mm+ is an {\em operator} in this case a mass
+matrix.
+
+PSyclone replaces the code for invoke the kernels, with a call to a
+generated procedure in the PSy layer with the fields and operators as
+arguments. This is shown below
+\begin{lstlisting}[language=Fortran]
+ CALL invoke_56(v(m), s(m), mm)
+\end{lstlisting}
+
+Shown below is a code fragment from the generated PSy layer from for
+the invoke shown above.
+\begin{lstlisting}[language=Fortran, numbers=left]
+ nlayers = v_proxy%vspace%get_nlayers()
+ !
+ ! Create a mesh object
+ !
+ mesh => v%get_mesh()
+ !
+ ! Look-up dofmaps for each function space
+ !
+ map_any_space_1_v => v_proxy%vspace%get_whole_dofmap()
+ map_any_space_2_s => s_proxy%vspace%get_whole_dofmap()
+ !
+ ! Initialise number of DoFs for any_space_1_v
+ !
+ ndf_any_space_1_v = v_proxy%vspace%get_ndf()
+ undf_any_space_1_v = v_proxy%vspace%get_undf()
+ !
+ ! Initialise number of DoFs for any_space_2_s
+ !
+ ndf_any_space_2_s = s_proxy%vspace%get_ndf()
+ undf_any_space_2_s = s_proxy%vspace%get_undf()
+ !
+ ! Call kernels and communication routines
+ !
+ DO df=1,v_proxy%vspace%get_last_dof_owned()
+   v_proxy%data(df) = 0.0_r_def
+ END DO 
+ !
+ ! Set halos dirty/clean for fields modified in the above loop
+ !
+ CALL v_proxy%set_dirty()
+ !
+ CALL v_proxy%halo_exchange(depth=1)
+ !
+ IF (s_proxy%is_dirty(depth=1)) THEN
+   CALL s_proxy%halo_exchange(depth=1)
+ END IF 
+ !
+ DO cell=1,mesh%get_last_halo_cell(1)
+   CALL matrix_vector_code(cell, nlayers, v_proxy%data, &
+      s_proxy%data, mm_proxy%ncell_3d, mm_proxy%local_stencil, &
+      df_any_space_1_v, undf_any_space_1_v, &
+      map_any_space_1_v(:,cell), &
+      ndf_any_space_2_s, undf_any_space_2_s, &
+      map_any_space_2_s(:,cell))
+  END DO 
+  !
+  ! Set halos dirty/clean for fields modified in the above loop
+  !
+  CALL v_proxy%set_dirty()
+  !
+  CALL v_proxy%halo_exchange(depth=1)
+\end{lstlisting}
+Lines 1-20 are the calls to the LFRic infrastructure to pull out
+sizes, loop counters, and the indirection maps for the unstructured
+mesh. Lines 24-26 are the builtin function generated in place in the
+PSy layer for a point-wise operation. Lines 30-36 are the distributed
+memory calls to the infrastructure for a halo exchange and
+testing/setting flags to indicate whether a halo (and to what depth)
+has been updated. Lines 38-45 are the looping over the horizontal mesh
+and the procedure call to the kernel itself. The arguments are simple
+scalars for sizes and loop counters, the data arrays and (for example)
+the indirection maps. 
+
+
+Shown in the code fragment below is the kernel metadata for the
+matrix-vector kernel invoked in the algorithm layer.
+\begin{lstlisting}[language=Fortran, numbers=left]
+type, public, extends(kernel_type) ::  &
+                    matrix_vector_kernel_type
+  private
+  type(arg_type) :: meta_args(3) = (/ &
+       arg_type(GH_FIELD,    GH_INC,  ANY_SPACE_1), &
+       arg_type(GH_FIELD,    GH_READ, ANY_SPACE_2), &
+       arg_type(GH_OPERATOR, GH_READ, ANY_SPACE_1, &
+       ANY_SPACE_2)  /)
+  integer :: iterates_over = CELLS
+contains
+  procedure, nopass ::matrix_vector_code
+end type
+\end{lstlisting}
+The metadata is embedded in Fortran so that no special comments or
+other mark-up is required. The access descripters shown above are key
+to deriving the appropriate rules for generating the code in the PSy
+layer. The \verb+arg_type+ has three components. Firstly, the type of
+the data object, in this case fields and operators\footnote{An
+  operator is a mapping between one function space and another.}. Secondly, what is
+the data acess pattern for this data object, {\em e.g.} \verb+GH_INC+ means the data is
+incremented. Thirdly, which function space the data lives on. In this case, the
+kernel is general and can operate over any space, hence, the
+\verb+any_space_n+. Whilst the $n$ can be any, the function space of the
+first field must correspond to the first function space of the operator and the
+function space of second field must correspond to the second function
+space of the operator. 
+
+{\em loop fusion, OpenMP}. 
+
+\section{\label{sec:lib}Infrastructure}
+
+As shown in figure~\ref{fig:psykal}, the PSyKAl layered
+architecture is supported by the LFRic infrastructure. This provides
+functionality such as distributed memory support (halo exchanges),
+colouring for OpenMP threading and the provision of loop bounds that the
+generated Psy layer will use.
+
+\begin{figure}
+\centering\includegraphics[width=0.8\linewidth]{infrastructure_objects.pdf}
+\caption{\label{fig:objects} Schematic diagram of the structural
+hierarchy used in the LFRic infrastructure to support the field object}
+\end{figure}
+
+Within the development of LFRic there has been a conscious effort to
+provide the infrastructure following an object-orientated approach. As
+such, much of the infrastructure is provided through a hierarchy of
+objects that culminates in the field object that is used within the
+science code. The hierarchy of objects is shown in
+figure~\ref{fig:objects}. Two-dimensional topological and positional
+information about the global mesh is read into the global model object.
+This is passed to a partitioner to generate a partition object that
+describes what portion of the global mesh the local processing element
+will be working on. The global mesh and the partition objects are then
+combined to form a mesh object that extrudes the two-dimensional mesh
+information in the vertical for just the part of the mesh that will be
+used on the local processing element to form a local, three-dimensional
+representation of the mesh. The way the data that is held within the
+field object, relates to the mesh is described by the function space.
+
+Most of the infrastructure is accessed through the field object. So, for
+example if a halo exchange is required on a field, the halo exchange
+method on the field object is called. This infrastructure application
+programming interface (API) is used by the PSy layer to access
+information and functionality.
+
+\subsection{\label{sec:distmem}Distributed Memory Optimisation}
+
+Distributed memory parallelism is achieved by partitioning the full
+(global) domain into smaller sections (partitioned or local domains).
+Information is passed between the tasks through the use of halo regions.
+Data in these areas are provided from other partitions that own that
+section of the domain.
+
+Performing halo exchanges is not unique to LFRic. Running large parallel
+model codes has been done for many years, using halo exchanges as a
+method of providing communication between partitions. The LFRic
+infrastructure has a data model with significant differences to many
+older models which will affect the way distributed memory parallelism is
+implemented:
+
+\begin{enumerate}
+
+\item LFRic is designed to support horizontally unstructured meshes,
+which means it has to support non-uniform shaped partitions with complex
+shaped halo regions.
+
+\item Because the domain is horizontally unstructured, moving from one
+data point to a horizontally adjacent data point requires using a lookup
+table, which is slower than using direct addressing. In order to recover
+some code performance, fields are laid out in memory so that vertically
+adjacent data points are next to each other, which means that, for
+optimisation reasons, the looping structure within LFRic is k-innermost.
+
+\item LFRic supports a finite-element formulation which means that data
+are held as ``degrees of freedom'' (dofs) on all the different
+entities within the mesh: cell volumes, faces, edges and vertices.
+Partitioning the domain along cell boundaries will always lead to
+partitions which need to share data values. Sharing data makes assigning
+ownership of that data, and therefore, halo swapping more complex.
+
+\end{enumerate}
+
+The halo exchanges are achieved by passing information between processes
+using MPI. For performance and ease of use reasons, the MPI library is
+not called directly, instead a wrapper is used. At initialisation time,
+the wrapper library pre-generates the communication routing tables
+required to perform a halo exchange, which are then reused every time a
+halo exchange is required.
+
+In order to generate the routing table, each rank needs to supply the
+following information to the library:
+
+\begin{itemize}
+
+\item A list of all the global dof ids of all the locally owned dofs
+
+\item A list of all the global dof ids of all the dofs in the increasing
+levels of halo depth 
+
+\end{itemize}
+
+Initially, the LFRic project used the infrastructure library component
+of the Earth System Modelling Framework (ESMF)~\cite{ESMFDocs} to
+provide the layer between the model and MPI, but it wasn't particularly
+well suited to the particular problem it was being used for. Although
+routing tables it generated were optimal (the halo exchanges called
+during timestepping were very fast), the time to generate the tables
+became quite long when the model was run at scale. The design of the
+model framework to support the `separation of concerns' led to all the
+halo exchange functionality being neatly encapsulated in the PSy layer.
+This made it relatively easy to try a different library to provide the
+intermadiate layer. A switch was made to use the YAXT (Yet Another
+eXchange Tool)~\cite{YAXTDocs} library written by DKRZ. This provides
+halo exchanges during time stepping that are as fast as those provided
+by ESMF, but the time taken to initialise the routing tables is must
+shorter. 
+
+The API for supporting distributed memory optimisation is very simple. A
+halo exchange function is provided on every field and a flag is
+maintained by the infrastructure to track whether data held in the halo
+cells is up to date with the owner of that data (`clean' halos) or
+whether a parallel computation has updated the field on the owning
+partition and the local halos are out of date (`dirty' halos). When the
+Psy layer determines that a halo exchange may be required, it first
+checks the state of the halos and if they are `dirty' it calls the halo
+exchange functionality.
+
+\subsection{\label{sec:sharedmem}Shared Memory Optimisation}
+
+As with all the parallelisation within LFRic, the shared memory
+parallelism is implemented within the Psy layer. The directives used to
+implement the shared memory parallelism are inserted into the PSy layer
+code. The finite-element formulation makes use of data on mesh entities
+shared by more than one cell. That means that two threads working on
+different cells may try writing to a dof shared between the cells at the
+same time. In order to prevent these write contentions, the mesh is
+split into collections of cells such that there can be no write
+contentions within a collection, so calculations on the cells within a
+collections can be run in parallel. Each of these parallel collections
+are then run sequentially and there are no write contentions. The
+collections are often named after different colours, so the process is
+known a mesh colouring. The information and functionality to support
+colouring within the shared memory parallelism is provided by the LFRic
+infrastructure.
+
+When the mesh object is created, it is is coloured by the infrastructure
+and information about the colouring is stored, so it can be used from
+within the PSy layer. Infrastructure provides the number of colours,
+the number of cells in each colour and which cells are present in each
+colour. Shared memory parallel directives are placed in the Psy layer
+and the looping can be made safe using the colouring information
+provided by the infrastructure. 
+
+\subsection{\label{sec:io}Parallel I/O}
+
+A consequence of models running over many thousands of cores is a requirement
+for scalable parallel I/O. A computationally optimised model is of little practical
+operational use if I/O then becomes a limiting factor. The LFRic project has
+decided to investigate options for I/O alongside the computational
+and infrastructure development for three main reasons. Firstly, the requirement
+to be able to run science assessment jobs on large numbers of cores and obtain the
+output efficiently. Secondly, a key aim of LFRic is scalability and therefore it is
+helpful to be able to monitor the impact of I/O on this as the infrastructure and
+science develops. Thirdly, LFRic is making some fundamental changes that impact the
+underlying mesh and this links to I/O in terms of input / output file formats. Having
+a concrete idea of what these file formats will be in the future enables LFRic to
+inform future users internal and external to the Met Office.
+
+Although developing a bespoke I/O system was a possibility, the decision was
+made early on to adopt an existing parallel I/O framework and leverage knowledge and
+experience from the community; developing Earth System Models is becoming increasingly
+complex and challenging for any one organisation to develop and maintain all the required
+components~\cite{gmd-2017-186}.
+As of early 2016, when the first scoping work for LFRic parallel I/O was being done,
+there were several existing parallel I/O frameworks and XIOS was selected as the prime
+candidate for evaluation~\cite{XIOSWiki}. A discussion of the other frameworks and why
+they were not considered can be found in~\cite{Adams2018}.
+
+XIOS was an obvious choice for LFRic as it was a mature framework, having had many years
+of development and was already in use in the weather and climate domain. For example,
+the Orchidee land surface model, the Dynamico dynamical core (part of the LMD-Z
+Atmosphere model) and in the NEMO ocean model. NEMO is used in Met Office coupled
+models so there was some existing experience with XIOS. In terms of potential scalability,
+XIOS had also been proved to run successfully in models running on the order of 10,000
+cores. Crucially for climate models, XIOS works with the OASIS coupling framework that
+is commonly used in coupled climate models including the UM. 
+
+The key features of XIOS can be summarised as follows:
+\begin{enumerate}
+  \item Flexible definition of I/O workflows via external XML files
+  \item Client/Server architecture allowing asynchronous I/O servers on dedicated cores
+  \item Sophisticated "in situ" post-processing via workflows defined in the XML file(s) 
+\end{enumerate}
+
+XIOS is written in C++, but also provides a Fortran API to developers. It makes use of
+MPI-IO and the NetCDF4 and HDF5 libraries and handles unstructured and regular grids.
+XIOS is a client-server framework where I/O servers are asynchronous processes buffering
+output requests from client processes. XIOS also has sophisticated post-processing
+functionality - e.g. for regridding, time series, meaning. The output schedule and
+file format are defined by an XML file which hides a lot of complexity from the user.
+
+Prior to 2016, XIOS only supported read and write of NetCDF file formats that follow the CF
+conventions.  As previously explained in section~\ref{sec:GH}, the LFRic implementation uses
+semi-structured meshes and a FEM formulation, where variables are held on
+different elements of the mesh (nodes, edges or faces). Therefore, the I/O system needs to
+handle data structured in this way. The UGRID-NetCDF format has been chosen as the main
+LFRic input mesh format and also output format for diagnostics and model dumps~\cite{UgridSpec}.
+In the UGRID convention the topology of the underlying unstructured mesh is stored as well as
+data, and data can be defined on any of the mesh elements: nodes, edges, or faces.
+Working in collaboration with IPSL (Institut Pierre Simon LaPlace), the ability to write the
+UGRID format was added to XIOS in 2016 in order to support LFRic. 
+
+XIOS has been integrated into LFRic via a lightweight I/O interface so
+that (as far as possible) the underlying I/O framework is hidden and
+could be replaced by an alternative.  The I/O interface is designed to
+be compatible with the use of Fortran 2003 Object Orientation in
+LFRic. The field object (see figure~\ref{fig:objects}) contains read and write
+interface declarations that use Fortran procedure pointers to define
+I/O 'behaviours'. When a field is created the behaviours are set by
+pointing to a specific reading or writing method. Writing a field just
+involves calling \verb+field%write_field()+ - {\em i.e.}, it is the
+responsibility of the field to write itself and how the writing is
+actually done is hidden.
+
+More details of the experimental results of the LFRic-XIOS integration work can be
+found in~\cite{Adams2018} where preliminary results on I/O scalability (up to 13824 
+processors) and XIOS and Lustre performance tuning are presented. The conclusions of
+this work were that XIOS is an effective parallel I/O framework that was technically
+straightforward to integrate into the existing LFRic infrastructure via the XIOS
+Fortran interface. Scaling experiments showed that XIOS performance was scaleable with
+respect to increasing numbers of cores, even with minimal tuning.
+
+\section{\label{sec:psyclone}PSyclone}
+
+As discussed earlier, PSyclone~\cite{psyclone} is a domain-specific
+compiler which, given an Algorithm and associated Kernels, generates
+the code for the middle, PSy layer. Currently, each of these layers
+must be in Fortran as this remains a popular choice for scientific
+developers in the earth-system modelling domain. However, there is
+nothing in the approach to prevent other languages being targetted in
+future.
+
+\subsection{Design}
+
+The language of the DSL which PSyclone compiles is embedded within
+Fortran and consists of two parts. The first is a way of specifying
+the computational kernels to be executed and in what order.  The
+Algorithm developer provides this information by writing one or more
+calls to a fictional (non-existant) `invoke' subroutine with the
+desired kernels as arguments, e.g.:
+\begin{lstlisting}
+use kernel1_mod, only: kernel1_type
+...
+call invoke(kernel1_type(field1, field2), &
+            kernel2_type(field2, field3))
+\end{lstlisting}
+(This is valid Fortran because `\lstinline!kernel1_type(field1,field2)!' is
+actually a structure constructor.) Note that this Fortran
+is never actually compiled by a Fortran compiler (and hence the `invoke'
+does not need to exist). PSyclone will produce a modified version of this
+code with a call to a real, generated subroutine in the PSy layer.
+
+The second part of the language is a way of describing the
+requirements of each kernel (essentially the properties of the kernel;
+inputs, outputs and the iteration space). This information is
+provided as meta-data (again, valid Fortran) that must reside in the
+Fortran module containing the kernel source.
+
+PSyclone is also able to support recognised standard kernel names that
+do not require a kernel implementation to be provided and instead
+their code is generated. These kernels are termed `builtins'.
+
+Figure~\ref{fig:psyclone-arch} shows the data flow within the PSyclone
+architecture.  Starting from the left, the Algorithm is parsed (using
+fparser, a pure Python implementation of a Fortran parser) and any
+`invoke' calls identified. The list of kernels (and their arguments)
+associated with each of these calls is then stored. For each Invoke,
+the Fortran modules containing the kernel code (as identified by
+\texttt{use} statements) are parsed and the meta-data for each kernel
+extracted.
+
+\begin{figure}
+\centering\includegraphics[width=0.8\linewidth]{psyclone_flow.pdf}
+\caption{\label{fig:psyclone-arch}Data flow within the PSyclone architecture.}
+\end{figure}
+
+PSyclone must then perform two tasks: first, generate an internal
+representation (`schedule') of a PSy-layer routine for each Invoke in
+the Algorithm. If distributed memory is specified then this schedule
+must include appropriate halo exchanges and global sums to ensure
+correct execution. Second, PSyclone must modify the supplied Algorithm
+code and replace each `call invoke' with a call to the corresponding
+routine in the PSy layer. This latter task is achieved by modifying
+the fparser-produced Abstract Syntax Tree (AST) of the Algorithm and
+then re-generating Fortran from the new AST.
+
+If no transformations are being applied (see below) to the PSy-layer
+schedule(s) then all that remains is for the PSy generator to create
+Fortran code.  The steps involved in generating a vanilla
+(un-optimised) PSy-layer subroutine are as follows:
+\begin{enumerate}
+\item Generate the unique list of arguments required by all kernels
+  in the Invoke;
+\item Generate Fortran which queries the LFRic infrastructure to get
+  information on the sizes of the various iteration spaces (number of cells,
+  vertical levels, dofs etc.);
+\item Generate Fortran which queries the LFRic infrastructure to get the
+  various look-up tables (e.g. for identifying the dofs belonging to a
+  given cell);
+\item Generate Fortran which dereferences the various field and operator
+  objects to get the necessary data arrays;
+\item For each kernel in the Invoke:
+  \begin{itemize}
+    \item Generate a loop over the correct iteration space (cells or dofs);
+    \item Generate a call to the kernel subroutine with all necessary arguments.
+  \end{itemize}
+\end{enumerate}
+
+As mentioned earlier, since the Algorithm deals with global objects
+(fields, operators etc.)  and a kernel deals with e.g. individual
+columns of cells, the PSy layer must also account for the fact that
+the global objects are in fact decomposed over MPI processes by the
+LFRic infrastructure. PSyclone must therefore ensure that global sums
+are placed appropriately and that the halos of any fields read by a
+given kernel are up-to-date before that kernel is executed. Initially
+clean halos were implemented simply by generating code that, at
+runtime, marked any field written to by a kernel as having a dirty
+halo (using the LFRic infrastructure). Prior to each kernel call code
+was also inserted that, for each field with a halo access, performed a
+halo swap if the halo was dirty. Subsequently, dependence analysis has
+been added and now only those halo exchanges that are known to be
+required are inserted ~\cite{psyclone}.
+
+The PSyclone approach and the {PS}y{KA}l separation of concerns is
+heavily influenced by the OP2 system~\citep{OP2, PYOP2}. The calls
+that specify parallelism in both approaches are similar in terms of
+where they are placed in the code and in their semantics. However,
+PSyclone supports the specification of more than one kernel in a
+parallel region of code, compared with one for OP2, giving more scope
+for optimisation. Unlike OP2, PSyclone also takes responsibility for
+adding halo exchanges and global sums. For a comparison of {PS}y{KA}l
+with other, similar approaches please see~\cite{nemolite2d_psykal}.
+
+\subsection{Transformations}
+
+The large variety in existing computer architectures, the number of
+different compilers and the fact that all of these are constantly
+evolving means that it is simply not possible to write or generate a
+single source code that will be (and continue to be) performance
+portable~\cite{shallow_psykal, nemolite2d_psykal}.  It is also very
+difficult to create a system that is automatically able to create
+performant code for such a range of conditions. PSyclone therefore
+seeks to be a tool for the HPC expert, enabling them to apply the
+optimisations that, thanks to their experience and knowledge, they
+know to be beneficial for a particular architecture and/or compiler.
+
+The application of optimisations is achieved by applying
+PSyclone-provided transformations to the schedule of an Invoke.  For
+instance, in order to parallelise a give schedule using OpenMP
+PSyclone provides transformations to create a parallel region and
+introduce various forms of work-sharing construct. Unfortunately,
+work-sharing of loops over cells for kernels which update quantities
+on horizontally-continuous function spaces will result in race
+conditions where multiple threads attempt to write to the same dof. It
+is therefore necessary to control the iteration space in order to
+prevent these race conditions and PSyclone provides a loop-colouring
+transformation for this purpose.
+
+Although PSyclone transformations may be applied within a Python
+interactive session, they will typically be used during the
+compilation phase of a potentially large application. Therefore,
+PSyclone allows (Python) transformation scripts to be supplied
+on the command line. As an example, the following simple script is sufficient
+to add OpenMP parallelism to the whole LFRic code base:
+\begin{lstlisting}[language=python]
+def trans(psy):
+    ''' Applies PSyclone colouring & OpenMP transformations. '''
+    ctrans = Dynamo0p3ColourTrans()
+    otrans = Dynamo0p3OMPLoopTrans()
+    oregtrans = OMPParallelTrans()
+
+    # Loop over all of the Invokes in the PSy object
+    for invoke in psy.invokes.invoke_list:
+
+        schedule = invoke.schedule
+
+        # Colour loops over cells unless they are on discontinuous
+        # spaces (W3, WTHETA and W2V) or over dofs
+        for loop in schedule.loops():
+            if loop.iteration_space == "cells" \
+                and loop.field_space.orig_name \
+                    not in DISCONTINUOUS_FUNCTION_SPACES:
+                schedule, _ = ctrans.apply(loop)
+
+        # Add OpenMP to loops unless they are over colours
+        for loop in schedule.loops():
+            if loop.loop_type != "colours":
+                schedule, _ = oregtrans.apply(loop)
+                schedule, _ = otrans.apply(loop, reprod=True)
+    return psy
+\end{lstlisting}
+Here, the `psy' object contains PSyclone's internal represenation of
+the PSy layer that it will generate. The script takes this, modifies
+it using transformations and then returns it.
+
+\subsection{Example}
+
+In this section, the operation of PSyclone is illustrated by way of
+an example extracted from the LFRic code base.
+
+As already described, PSyclone draws from both the Algorithm and
+Kernel source in order to reason about the PSy code to be generated.
+In the Algorithm, kernels that are to be executed in parallel are
+provided as the arguments to an \texttt{invoke} call:
+
+\begin{lstlisting}
+call invoke(                                                  &
+   setval_c( grad_p, 0.0_r_def ),                             &
+   scaled_matrix_vector_kernel_type(grad_p, p, div_star,      &
+                                    hb_inv, u_normalisation), &
+   enforce_bc_kernel_type( grad_p ),                          &
+   apply_variable_hx_kernel_type(l_p, grad_p, mt_lumped_inv,  &
+                                 p, compound_div, p3theta,    &
+                                 ptheta2, m3_exner_star, one) )
+\end{lstlisting}
+
+The \texttt{setval\_c} kernel is an example of one of the builtin
+kernels described earlier i.e. one where PSyclone generates the kernel
+code rather than it being implemented by a user.
+
+The arguments to these kernels are either scalar quantities or
+derived types representing fields or operators, e.g.:
+
+\begin{lstlisting}
+! For applying lhs
+type(field_type), private :: grad_p, l_p
+\end{lstlisting}
+
+The kernel source must include appropriate meta-data describing the
+kernel arguments, the iteration space and the name of the routine
+that actually implements the kernel:
+\begin{lstlisting}
+type, public, extends(kernel_type) :: apply_variable_hx_kernel_type
+  private
+  type(arg_type) :: meta_args(9) = (/                  &
+      arg_type(GH_FIELD,    GH_WRITE, W3),             &
+      arg_type(GH_FIELD,    GH_READ,  W2),             &
+      arg_type(GH_FIELD,    GH_READ,  Wtheta),         &
+      arg_type(GH_FIELD,    GH_READ,  W3),             &
+      arg_type(GH_OPERATOR, GH_READ,  W3,     W2),     &
+      arg_type(GH_OPERATOR, GH_READ,  W3,     Wtheta), &
+      arg_type(GH_OPERATOR, GH_READ,  Wtheta, W2),     &
+      arg_type(GH_OPERATOR, GH_READ,  W3,     W3),     &
+      arg_type(GH_REAL,     GH_READ)                   &
+      /)
+  integer :: iterates_over = CELLS
+contains
+  procedure, nopass :: apply_variable_hx_code
+end type
+\end{lstlisting}
+In this example the \texttt{apply\_variable\_hx} kernel writes to a field on the
+W3 function space and reads from fields on the W2, W3 and Wtheta
+function spaces. It also reads from three local-matrix assembly operators.
+Since \texttt{iterates\_over} is \texttt{CELLS}, PSyclone will generate code
+to call this kernel for each cell in the 2D domain:
+\begin{lstlisting}
+DO cell=1,mesh%get_last_edge_cell()
+  !
+  CALL apply_variable_hx_code(cell, nlayers, l_p_proxy%data, &
+    grad_p_proxy%data, mt_lumped_inv_proxy%data, p_proxy%data, &
+    compound_div_proxy%ncell_3d, compound_div_proxy%local_stencil, &
+    p3theta_proxy%ncell_3d, p3theta_proxy%local_stencil, &
+    ptheta2_proxy%ncell_3d, ptheta2_proxy%local_stencil, &
+    m3_exner_star_proxy%ncell_3d, m3_exner_star_proxy%local_stencil, &
+    one, ndf_w3, undf_w3, map_w3(:,cell), ndf_w2, undf_w2, &
+    map_w2(:,cell), ndf_wtheta, undf_wtheta, map_wtheta(:,cell))
+END DO 
+\end{lstlisting}
+Note that the generated code `unpacks' the derived types so as to
+provide raw arrays to the kernel subroutine. It also provides look-up
+tables (`maps') and dof counts for each of the function spaces used by
+the kernel. 
+
+The kernel itself is then responsible for iterating over the cells
+within a column. For instance, a fragment of the
+\texttt{apply\_variable\_hx\_code} subroutine looks like:
+\begin{lstlisting}
+! Compute Pt2 * u
+do k = 0, nlayers-1
+  do df = 1, ndf_w2  
+    x_e(df) = x(map_w2(df)+k)
+  end do
+  ik = (cell-1)*nlayers + k + 1
+    
+  t_e = matmul(pt2(:,:,ik),x_e)
+  do df = 1,ndf_wt
+    t(map_wt(df)+k) = t(map_wt(df)+k) + t_e(df)
+  end do
+end do
+\end{lstlisting}
+where the outer loop is over levels in the extruded mesh.
+
+Finally, the original Invoke call in the Algorithm is re-written as:
+\begin{lstlisting}
+CALL invoke_7(grad_p, p, div_star, hb_inv, u_normalisation, l_p, &
+              mt_lumped_inv, compound_div, p3theta, ptheta2,   &
+              m3_exner_star, one)
+\end{lstlisting}
+where `invoke\_7' is the name of the generated PSy-layer subroutine.
+
+Since the argument list of a kernel subroutine can quickly become long
+and complicated, PSyclone also provides a kernel-stub generator. Given
+kernel meta-data, this tool generates a skeleton Fortran subroutine
+with all of the necessary arguments declared. The kernel developer
+then need only implement the body of the kernel.
 
 \section{\label{sec:Solver}Linear solvers and preconditioners}
 Iterative solvers for large sparse linear systems of equations are
@@ -481,7 +1125,7 @@ to achieve optimal performance.
 To solve a particular problem, the user has to develop bespoke derived
 types for the corresponding linear operator and preconditioners. Note
 that the \texttt{apply()} methods of those derived types contain
-invoke kernels, which guarantees optimal performance of the entire
+invoke calls to kernels, which guarantees optimal performance of the entire
 model. For example, to construct a solver for the implicit linar
 system which is inverted in every semi-implicit time-step, the user
 implements the following objects (see Fig. \ref{fig:class_hierarchy},
@@ -512,7 +1156,7 @@ To precondition the strongly anisotropic Helmholtz-operator for the
 pressure system, the tensor-product multigrid approach in
 \cite{Borm2001} is used in LFRic. This is a more advanced solver than
 the current tridiagonal vertical-only preconditioner in the ENDGame
-model. The multigrid algorithm used in LFRic has been tested
+model. The multigrid algorithm currently being developed in LFRic has been tested
 extensively for representative elliptic equations in atmospheric
 modelling in \cite{Mueller2014,Dedner2016}, including a mixed-finite
 element discretisation of a linear gravity wave system in
