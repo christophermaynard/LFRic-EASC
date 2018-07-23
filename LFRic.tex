@@ -319,21 +319,22 @@ respect to increasing numbers of cores, even with minimal tuning.
 
 \section{\label{sec:psyclone}PSyclone}
 
-PSyclone~\cite{psyclone} is a domain-specific compiler which, given an
-Algorithm and associated Kernels, generates the code for the middle, PSy
-layer. Currently, each of these layers must be in Fortran as this
-remains a popular choice for scientific developers in the earth-system
-modelling domain. However, there is nothing in the approach to prevent
-other languages being targetted in future.
+As discussed earlier, PSyclone~\cite{psyclone} is a domain-specific
+compiler which, given an Algorithm and associated Kernels, generates
+the code for the middle, PSy layer. Currently, each of these layers
+must be in Fortran as this remains a popular choice for scientific
+developers in the earth-system modelling domain. However, there is
+nothing in the approach to prevent other languages being targetted in
+future.
 
 \subsection{Design}
 
 The language of the DSL which PSyclone compiles is embedded within
 Fortran and consists of two parts. The first is a way of specifying
-the computational kernels to be executed and in what order.
-The Algorithm developer provides this information by writing one or more
-calls to a fictional `invoke' subroutine with the desired kernels as
-arguments, e.g.:
+the computational kernels to be executed and in what order.  The
+Algorithm developer provides this information by writing one or more
+calls to a fictional (non-existant) `invoke' subroutine with the
+desired kernels as arguments, e.g.:
 \begin{lstlisting}
 use kernel1_mod, only: kernel1_type
 ...
@@ -342,22 +343,28 @@ call invoke(kernel1_type(field1, field2), &
 \end{lstlisting}
 (This is valid Fortran because `\lstinline!kernel1_type(field1,field2)!' is
 actually a structure constructor.) Note that this Fortran
-is never actually compiled by a Fortran compiler (and hence `invoke'
-can be fictional). PSyclone will produce a modified version of this
+is never actually compiled by a Fortran compiler (and hence the `invoke'
+does not need to exist). PSyclone will produce a modified version of this
 code with a call to a real, generated subroutine in the PSy layer.
 
 The second part of the language is a way of describing the
-requirements of each kernel (essentially inputs, outputs and iteration
-space). This information is provided as meta-data (again, valid Fortran)
-that must reside in the Fortran module containing the kernel source.
+requirements of each kernel (essentially the properties of the kernel;
+inputs, outputs and the iteration space). This information is
+provided as meta-data (again, valid Fortran) that must reside in the
+Fortran module containing the kernel source.
+
+PSyclone is also able to support recognised standard kernel names that
+do not require a kernel implementation to be provided and instead
+their code is generated. These kernels are termed `builtins'.
 
 Figure~\ref{fig:psyclone-arch} shows the data flow within the PSyclone
 architecture.  Starting from the left, the Algorithm is parsed (using
-fparser, a Python implementation of a Fortran parser) and any `invoke'
-calls identified. The list of kernels (and their arguments) associated
-with each of these calls is then stored. For each Invoke, the Fortran
-modules containing the kernel code (as identified by \lstinline!use!
-statements) are parsed and the meta-data for each kernel extracted.
+fparser, a pure Python implementation of a Fortran parser) and any
+`invoke' calls identified. The list of kernels (and their arguments)
+associated with each of these calls is then stored. For each Invoke,
+the Fortran modules containing the kernel code (as identified by
+\texttt{use} statements) are parsed and the meta-data for each kernel
+extracted.
 
 \begin{figure}
 \centering\includegraphics[width=0.8\linewidth]{psyclone_flow.pdf}
@@ -366,11 +373,13 @@ statements) are parsed and the meta-data for each kernel extracted.
 
 PSyclone must then perform two tasks: first, generate an internal
 representation (`schedule') of a PSy-layer routine for each Invoke in
-the Algorithm and second, modify the supplied Algorithm code and
-replace each `call invoke' with a call to the corresponding routine in
-the PSy layer. This latter task is achieved by modifying the
-fparser-produced Abstract Syntax Tree (AST) of the Algorithm and then
-re-generating Fortran from the new AST.
+the Algorithm. If distributed memory is specified then this schedule
+must include appropriate halo exchanges and global sums to ensure
+correct execution. Second, PSyclone must modify the supplied Algorithm
+code and replace each `call invoke' with a call to the corresponding
+routine in the PSy layer. This latter task is achieved by modifying
+the fparser-produced Abstract Syntax Tree (AST) of the Algorithm and
+then re-generating Fortran from the new AST.
 
 If no transformations are being applied (see below) to the PSy-layer
 schedule(s) then all that remains is for the PSy generator to create
@@ -382,10 +391,11 @@ Fortran code.  The steps involved in generating a vanilla
 \item Generate Fortran which queries the LFRic infrastructure to get
   information on the sizes of the various iteration spaces (number of cells,
   vertical levels, dofs etc.);
-\item Generate Fortran which queries the LFRic infrastructure to get the various look-up
-  tables (e.g. for identifying the dofs belonging to a given cell);
-\item Generate Fortran which dereferences the various field and operator objects to get the
-  necessary data arrays;
+\item Generate Fortran which queries the LFRic infrastructure to get the
+  various look-up tables (e.g. for identifying the dofs belonging to a
+  given cell);
+\item Generate Fortran which dereferences the various field and operator
+  objects to get the necessary data arrays;
 \item For each kernel in the Invoke:
   \begin{itemize}
     \item Generate a loop over the correct iteration space (cells or dofs);
@@ -393,28 +403,30 @@ Fortran code.  The steps involved in generating a vanilla
   \end{itemize}
 \end{enumerate}
 
-Since the Algorithm deals with global objects (fields, operators etc.)
-and a kernel deals with e.g. individual columns of cells, the PSy
-layer must also account for the fact that the global objects are in
-fact decomposed over MPI processes by the LFRic
-infrastructure. PSyclone must therefore ensure that the halos of any
-fields read by a given kernel are up-to-date before that kernel is
-executed. Initially this was implemented simply by generating code
-that, at runtime, marked any field written to by a kernel as having a
-dirty halo (using the LFRic infrastructure). Prior to each kernel call
-code was also inserted that, for each field with a halo access,
-performed a halo swap if the halo was dirty. Subsequently we have
-implemented dependence analysis and now insert in the schedule only
-those halo exchanges that are known to be required~\cite{psyclone}.
+As mentioned earlier, since the Algorithm deals with global objects
+(fields, operators etc.)  and a kernel deals with e.g. individual
+columns of cells, the PSy layer must also account for the fact that
+the global objects are in fact decomposed over MPI processes by the
+LFRic infrastructure. PSyclone must therefore ensure that global sums
+are placed appropriately and that the halos of any fields read by a
+given kernel are up-to-date before that kernel is executed. Initially
+clean halos were implemented simply by generating code that, at
+runtime, marked any field written to by a kernel as having a dirty
+halo (using the LFRic infrastructure). Prior to each kernel call code
+was also inserted that, for each field with a halo access, performed a
+halo swap if the halo was dirty. Subsequently, dependence analysis has
+been added and now only those halo exchanges that are known to be
+required are inserted ~\cite{psyclone}.
 
 The PSyclone approach and the {PS}y{KA}l separation of concerns is
 heavily influenced by the OP2 system~\citep{OP2, PYOP2}. The calls
 that specify parallelism in both approaches are similar in terms of
-where they are placed in the code and in their semantics. However, PSyclone
-supports the specification of more than one kernel
-in a parallel region of code, compared with one for OP2, giving more
-scope for optimisation. For a comparison of {PS}y{KA}l with other, similar
-approaches please see~\cite{nemolite2d_psykal}. 
+where they are placed in the code and in their semantics. However,
+PSyclone supports the specification of more than one kernel in a
+parallel region of code, compared with one for OP2, giving more scope
+for optimisation. Unlike OP2, PSyclone also takes responsibility for
+adding halo exchanges and global sums. For a comparison of {PS}y{KA}l
+with other, similar approaches please see~\cite{nemolite2d_psykal}.
 
 \subsection{Transformations}
 
@@ -499,6 +511,10 @@ call invoke(                                                  &
                                  ptheta2, m3_exner_star, one) )
 \end{lstlisting}
 
+The \texttt{setval\_c} kernel is an example of one of the builtin
+kernels described earlier i.e. one where PSyclone generates the kernel
+code rather than it being implemented by a user.
+
 The arguments to these kernels are either scalar quantities or
 derived types representing fields or operators, e.g.:
 
@@ -579,12 +595,11 @@ CALL invoke_7(grad_p, p, div_star, hb_inv, u_normalisation, l_p, &
 \end{lstlisting}
 where `invoke\_7' is the name of the generated PSy-layer subroutine.
 
-Since the argument list of a kernel subroutine can
-quickly become long and complicated, PSyclone also provides a
-kernel-stub generator. Given some kernel meta-data, this tool
-generates a skeleton Fortran subroutine with all of the necessary
-arguments declared. The kernel developer then need only implement
-the body of the kernel.
+Since the argument list of a kernel subroutine can quickly become long
+and complicated, PSyclone also provides a kernel-stub generator. Given
+kernel meta-data, this tool generates a skeleton Fortran subroutine
+with all of the necessary arguments declared. The kernel developer
+then need only implement the body of the kernel.
 
 \section{\label{sec:Solver}Linear solvers and preconditioners}
 Iterative solvers for large sparse linear systems of equations are
