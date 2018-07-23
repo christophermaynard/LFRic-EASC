@@ -364,8 +364,136 @@ space of the operator.
 
 {\em loop fusion, OpenMP}. 
 
-\section{\label{sec:lib}Infrastructure}.
-ESMF, YAXT, XIOS, pFunit? netcdf etc.
+\section{\label{sec:lib}Infrastructure}
+
+As has been shown in figure~\ref{fig:psykal}, the PSyKAl layered
+architecture is supported by the LFRic infrastructure. This provides
+functionality such as distributed memory support (halo exchanges),
+colouring for OpenMP threading and the provision of loop bounds that the
+generated Psy layer will use.
+
+\begin{figure}
+\centering\includegraphics[width=0.8\linewidth]{infrastructure_objects.pdf}
+\caption{\label{fig:objects} Schematic diagram of the structural
+hierarchy used in the LFRic infrastructure to support the field object}
+\end{figure}
+
+Within the development of LFRic there has been a conscious effort to
+provide the infrastructure following an object-orientated approach. As
+such, much of the infrastructure is provided through a hierarchy of
+objects that culminates in the field object that is used within the
+science code. The hierarchy of objects is shown in
+figure~\ref{fig:objects}. Two-dimensional topological and positional
+information about the global mesh is read into the global model object.
+This is passed to a partitioner to generate a partition object that
+describes what portion of the global mesh the local processing element
+will be working on. The global mesh and the partition objects are then
+combined to form a mesh object that extrudes the two-dimensional mesh
+information in the vertical for just the part of the mesh that will be
+used on the local processing element to form a local, three-dimensional
+representation of the mesh. The way the data that is held within the
+field object, relates to the mesh is described by the function space.
+
+Most of the infrastructure is accessed through the field object. So, for
+example if a halo exchange is required on a field, the halo exchange
+method on the field object is called. This infrastructure application
+programming interface (API) is used by the PSy layer to access
+information and functionality.
+
+\subsection{\label{sec:distmem}Distributed Memory Optimisation}
+
+Distributed memory parallelism is achieved by partitioning the full
+(global) domain into smaller sections (partitioned or local domains).
+Information is passed between the tasks through the use of halo regions.
+Data in these areas are provided from other partitions that own that
+section of the domain.
+
+Performing halo exchanges is not unique to LFRic. Running large parallel
+model codes has been done for many years, using halo exchanges as a
+method of providing communication between partitions. The LFRic
+infrastructure has a data model with significant differences to many
+older models which will affect the way distributed memory parallelism is
+implemented:
+
+\begin{enumerate}
+
+\item LFRic is designed to support horizontally unstructured meshes,
+which means it has to support non-uniform shaped partitions with complex
+shaped halo regions.
+
+\item Because the domain is horizontally unstructured, moving from one
+data point to a horizontally adjacent data point requires using a lookup
+table, which is slower than using direct addressing. In order to recover
+some code performance, fields are laid out in memory so that vertically
+adjacent data points are next to each other, which means that, for
+optimisation reasons, the looping structure within LFRic is k-innermost.
+
+\item LFRic supports a finite-element formulation which means that data
+are held as ``degrees of freedom'' (dofs) on all the different
+entities within the mesh: cell volumes, faces, edges and vertices.
+Partitioning the domain along cell boundaries will always lead to
+partitions which need to share data values. Sharing data makes assigning
+ownership of that data, and therefore, halo swapping more complex.
+
+\end{enumerate}
+
+The halo exchanges are achieved by passing information between processes
+using MPI. For performance and ease of use reasons, the MPI library is
+not called directly, instead a wrapper is used. The YAXT (Yet Another
+eXchange Tool) library written by DKRZ is used for this wrapper
+~\cite{YAXTDocs}.
+
+YAXT halo exchanges require that a routing table is pre-generated at
+initialisation time, so each rank needs to supply the following
+to the YAXT call:
+
+\begin{itemize}
+
+\item A list of all the global dof ids of all the locally owned dofs
+
+\item A list of all the global dof ids of all the dofs in the increasing
+levels of halo depth 
+
+\end{itemize}
+
+The YAXT library then generates a routing table for each depth of halo
+exchange. These are stored until needed to perform a halo exchange.
+
+The API for supporting distributed memory optimisation is very simple. A
+halo exchange function is provided on every field and a flag is
+maintained by the infrastructure to track whether data held in the halo
+cells is up to date with the owner of that data (`clean' halos) or
+whether a parallel computation has updated the field on the owning
+partition and the local halos are out of date (`dirty' halos). When the
+Psy layer determines that a halo exchange may be required, it first
+checks the state of the halos and if they are `dirty' it calls the halo
+exchange functionality.
+
+\subsection{\label{sec:sharedmem}Shared Memory Optimisation}
+
+As with all the parallelisation within LFRic, the shared memory
+parallelism is implemented within the Psy layer. The directives used to
+implement the shared memory parallelism are inserted into the PSy layer
+code. The finite-element formulation makes use of data on mesh entities
+shared by more than one cell. That means that two threads working on
+different cells may try writing to a dof shared between the cells at the
+same time. In order to prevent these write contentions, the mesh is
+split into collections of cells such that there can be no write
+contentions within a collection, so calculations on the cells within a
+collections can be run in parallel. Each of these parallel collections
+are then run sequentially and there are no write contentions. The
+collections are often named after different colours, so the process is
+known a mesh colouring. The information and functionality to support
+colouring within the shared memory parallelism is provided by the LFRic
+infrastructure.
+
+When the mesh object is created, it is is coloured by the infrastructure
+and information about the colouring is stored, so it can be used from
+within the PSy layer. Infrastructure provides the number of colours,
+the number of cells in each colour and which cells are present in each
+colour. Shared memory parallel directives are placed in the Psy layer
+and the looping can be made safe using the colouring information
+provided by the infrastructure. 
 
 \subsection{\label{sec:io}Parallel I/O}
 
