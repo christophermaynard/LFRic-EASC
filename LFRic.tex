@@ -83,9 +83,9 @@ where these operations are expressed on a single column of data. In between is t
 Parallelisation System or PSy layer, where the horizontal looping and parallelism is
 expressed. This abstraction, called PSyKAl, is written in Fortran with Fortran 2003
 Object Orientation to encode the rules of the API.
-Moreover, a Python code called Psyclone can parse the algorithm and kernel layers and
-generate the Psy layer with different target programming models. In effect, the PSyKAl API
-and Psyclone are a Domain Specific Embedded Language (DSEL). Natural science code which
+Moreover, a Python code called PSyclone can parse the algorithm and kernel layers and
+generate the PSy layer with different target programming models. In effect, the PSyKAl API
+and PSyclone are a Domain Specific Embedded Language (DSEL). Natural science code which
 conforms to this API can be written in serial and the parallel code is then generated automatically.
 
 The model is under active development and indeed, the science and
@@ -371,7 +371,8 @@ first field must correspond to the first function space of the operator and the
 function space of second field must correspond to the second function
 space of the operator. 
 
-{\em loop fusion, OpenMP}. 
+{\em why this is great}.
+
 
 \section{\label{sec:lib}Infrastructure}
 
@@ -379,7 +380,7 @@ As shown in figure~\ref{fig:psykal}, the PSyKAl layered
 architecture is supported by the LFRic infrastructure. This provides
 functionality such as distributed memory support (halo exchanges),
 colouring for OpenMP threading and the provision of loop bounds that the
-generated Psy layer will use.
+generated PSy layer will use.
 
 \begin{figure}
 \centering\includegraphics[width=0.8\linewidth]{infrastructure_objects.pdf}
@@ -487,14 +488,14 @@ maintained by the infrastructure to track whether data held in the halo
 cells is up to date with the owner of that data (`clean' halos) or
 whether a parallel computation has updated the field on the owning
 partition and the local halos are out of date (`dirty' halos). When the
-Psy layer determines that a halo exchange may be required, it first
+PSy layer determines that a halo exchange may be required, it first
 checks the state of the halos and if they are `dirty' it calls the halo
 exchange functionality.
 
 \subsection{\label{sec:sharedmem}Shared Memory Optimisation}
 
 As with all the parallelisation within LFRic, the shared memory
-parallelism is implemented within the Psy layer. The directives used to
+parallelism is implemented within the PSy layer. The directives used to
 implement the shared memory parallelism are inserted into the PSy layer
 code. The finite-element formulation makes use of data on mesh entities
 shared by more than one cell. That means that two threads working on
@@ -513,7 +514,7 @@ When the mesh object is created, it is is coloured by the infrastructure
 and information about the colouring is stored, so it can be used from
 within the PSy layer. Infrastructure provides the number of colours,
 the number of cells in each colour and which cells are present in each
-colour. Shared memory parallel directives are placed in the Psy layer
+colour. Shared memory parallel directives are placed in the PSy layer
 and the looping can be made safe using the colouring information
 provided by the infrastructure. 
 
@@ -601,48 +602,18 @@ respect to increasing numbers of cores, even with minimal tuning.
 As discussed earlier, PSyclone~\cite{psyclone} is a domain-specific
 compiler which, given an Algorithm and associated Kernels, generates
 the code for the middle, PSy layer. Currently, each of these layers
-must be in Fortran as this remains a popular choice for scientific
-developers in the earth-system modelling domain. However, there is
+must be in Fortran and hence the compiler is embedded in
+Fortran. The choice of Fortran is motivated in section~\ref{sec:SoC}. However, there is
 nothing in the approach to prevent other languages being targetted in
-future.
-
-\subsection{Design}
-
-The language of the DSL which PSyclone compiles is embedded within
-Fortran and consists of two parts. The first is a way of specifying
-the computational kernels to be executed and in what order.  The
-Algorithm developer provides this information by writing one or more
-calls to a fictional (non-existant) `invoke' subroutine with the
-desired kernels as arguments, e.g.:
-\begin{lstlisting}
-use kernel1_mod, only: kernel1_type
-...
-call invoke(kernel1_type(field1, field2), &
-            kernel2_type(field2, field3))
-\end{lstlisting}
-(This is valid Fortran because `\lstinline!kernel1_type(field1,field2)!' is
-actually a structure constructor.) Note that this Fortran
-is never actually compiled by a Fortran compiler (and hence the `invoke'
-does not need to exist). PSyclone will produce a modified version of this
-code with a call to a real, generated subroutine in the PSy layer.
-
-The second part of the language is a way of describing the
-requirements of each kernel (essentially the properties of the kernel;
-inputs, outputs and the iteration space). This information is
-provided as meta-data (again, valid Fortran) that must reside in the
-Fortran module containing the kernel source.
-
-PSyclone is also able to support recognised standard kernel names that
-do not require a kernel implementation to be provided and instead
-their code is generated. These kernels are termed `builtins'.
+future. PSyclone itself is written in Python.
 
 Figure~\ref{fig:psyclone-arch} shows the data flow within the PSyclone
 architecture.  Starting from the left, the Algorithm is parsed (using
 fparser, a pure Python implementation of a Fortran parser) and any
-`invoke' calls identified. The list of kernels (and their arguments)
-associated with each of these calls is then stored. For each Invoke,
+invoke procedure calls identified. The list of kernels (and their arguments)
+associated with each of these calls is then stored. For each invoke,
 the Fortran modules containing the kernel code (as identified by
-\texttt{use} statements) are parsed and the meta-data for each kernel
+the Fortran use statements) are parsed and the meta-data for each kernel
 extracted.
 
 \begin{figure}
@@ -650,47 +621,47 @@ extracted.
 \caption{\label{fig:psyclone-arch}Data flow within the PSyclone architecture.}
 \end{figure}
 
-PSyclone must then perform two tasks: first, generate an internal
-representation (`schedule') of a PSy-layer routine for each Invoke in
+PSyclone must then perform two tasks: firstly, generate an internal
+representation, known as a {\em schedule}, of a PSy layer routine for each invoke in
 the Algorithm. If distributed memory is specified then this schedule
 must include appropriate halo exchanges and global sums to ensure
-correct execution. Second, PSyclone must modify the supplied Algorithm
+correct execution. Secondly, PSyclone must modify the supplied Algorithm
 code and replace each `call invoke' with a call to the corresponding
 routine in the PSy layer. This latter task is achieved by modifying
 the fparser-produced Abstract Syntax Tree (AST) of the Algorithm and
 then re-generating Fortran from the new AST.
 
-If no transformations are being applied (see below) to the PSy-layer
+If no transformations are being applied (see below) to the PSy layer
 schedule(s) then all that remains is for the PSy generator to create
 Fortran code.  The steps involved in generating a vanilla
-(un-optimised) PSy-layer subroutine are as follows:
+(un-optimised) PSy layer subroutine are as follows:
 \begin{enumerate}
 \item Generate the unique list of arguments required by all kernels
-  in the Invoke;
+  in the invoke
 \item Generate Fortran which queries the LFRic infrastructure to get
   information on the sizes of the various iteration spaces (number of cells,
-  vertical levels, dofs etc.);
+  vertical levels, dofs {\em etc.})
 \item Generate Fortran which queries the LFRic infrastructure to get the
-  various look-up tables (e.g. for identifying the dofs belonging to a
-  given cell);
+  various look-up tables ({\em e.g.} for identifying the dofs belonging to a
+  given cell)
 \item Generate Fortran which dereferences the various field and operator
-  objects to get the necessary data arrays;
-\item For each kernel in the Invoke:
-  \begin{itemize}
-    \item Generate a loop over the correct iteration space (cells or dofs);
-    \item Generate a call to the kernel subroutine with all necessary arguments.
-  \end{itemize}
+  objects to get the necessary data arrays
+\item For each kernel in the invoke
+  \begin{enumerate}
+    \item Generate a loop over the correct iteration space (cells or dofs)
+    \item Generate a call to the kernel subroutine with all necessary arguments
+  \end{enumerate}
 \end{enumerate}
 
-As mentioned earlier, since the Algorithm deals with global objects
-(fields, operators etc.)  and a kernel deals with e.g. individual
+Since the Algorithm deals with global objects
+(fields, operators {\em etc.})  and a kernel deals with {\em e.g.} individual
 columns of cells, the PSy layer must also account for the fact that
 the global objects are in fact decomposed over MPI processes by the
 LFRic infrastructure. PSyclone must therefore ensure that global sums
 are placed appropriately and that the halos of any fields read by a
 given kernel are up-to-date before that kernel is executed. Initially
 clean halos were implemented simply by generating code that, at
-runtime, marked any field written to by a kernel as having a dirty
+run-time, marked any field written to by a kernel as having a dirty
 halo (using the LFRic infrastructure). Prior to each kernel call code
 was also inserted that, for each field with a halo access, performed a
 halo swap if the halo was dirty. Subsequently, dependence analysis has
@@ -705,7 +676,7 @@ PSyclone supports the specification of more than one kernel in a
 parallel region of code, compared with one for OP2, giving more scope
 for optimisation. Unlike OP2, PSyclone also takes responsibility for
 adding halo exchanges and global sums. For a comparison of {PS}y{KA}l
-with other, similar approaches please see~\cite{nemolite2d_psykal}.
+with other, similar approaches see, for example~\cite{nemolite2d_psykal}.
 
 \subsection{Transformations}
 
@@ -721,13 +692,14 @@ optimisations that, thanks to their experience and knowledge, they
 know to be beneficial for a particular architecture and/or compiler.
 
 The application of optimisations is achieved by applying
-PSyclone-provided transformations to the schedule of an Invoke.  For
-instance, in order to parallelise a give schedule using OpenMP
+PSyclone-provided transformations to the schedule of an invoke.  For
+instance, in order to parallelise a given schedule using OpenMP,
 PSyclone provides transformations to create a parallel region and
-introduce various forms of work-sharing construct. Unfortunately,
+introduce various forms of work-sharing construct. However,
 work-sharing of loops over cells for kernels which update quantities
 on horizontally-continuous function spaces will result in race
-conditions where multiple threads attempt to write to the same dof. It
+conditions where multiple threads attempt to write to the same dof on
+a shared mesh entity. It
 is therefore necessary to control the iteration space in order to
 prevent these race conditions and PSyclone provides a loop-colouring
 transformation for this purpose.
@@ -745,7 +717,7 @@ def trans(psy):
     otrans = Dynamo0p3OMPLoopTrans()
     oregtrans = OMPParallelTrans()
 
-    # Loop over all of the Invokes in the PSy object
+    # Loop over all of the invokes in the PSy object
     for invoke in psy.invokes.invoke_list:
 
         schedule = invoke.schedule
@@ -866,7 +838,7 @@ end do
 \end{lstlisting}
 where the outer loop is over levels in the extruded mesh.
 
-Finally, the original Invoke call in the Algorithm is re-written as:
+Finally, the original invoke call in the Algorithm is re-written as:
 \begin{lstlisting}
 CALL invoke_7(grad_p, p, div_star, hb_inv, u_normalisation, l_p, &
               mt_lumped_inv, compound_div, p3theta, ptheta2,   &
@@ -1011,6 +983,30 @@ resolution). This greatly increases scalability since it avoids global
 couplings which arise on the coarsest level.
 
 \section{\label{sec:scal}Scaling}.
+\begin{figure}
+  \begin{center}
+    \includegraphics[width=0.9\linewidth]{scale.eps}
+    \caption{\label{fig:scale_PE}Parallel efficiency of the LFRic 
+      time-steps compared to 200 nodes.}
+  \end{center}
+\end{figure}
+
+\begin{figure}
+  \begin{center}
+    \includegraphics[width=0.9\linewidth]{strong_mv_T1.eps}
+    \caption{\label{fig:scale_T1}Scaling of the matrix-vector routine 
+      with 18 MPI ranks per socket.}
+  \end{center}
+\end{figure}
+
+\begin{figure}
+  \begin{center}
+    \includegraphics[width=0.9\linewidth]{strong_mv_T6.eps}
+    \caption{\label{fig:scale_T6}Scaling of the matrix-vector routine 
+      with hybrid 3 MPI ranks per socket and 6 OpenMP threads per MPI rank.}
+  \end{center}
+\end{figure}
+
 Scaling, MPI and OpenMP etc.
 
 \section{Conclusion}
