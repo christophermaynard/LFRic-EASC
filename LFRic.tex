@@ -448,13 +448,13 @@ ownership of that data, and therefore, halo swapping more complex.
 
 The halo exchanges are achieved by passing information between processes
 using MPI. For performance and ease of use reasons, the MPI library is
-not called directly, instead a wrapper is used. The YAXT (Yet Another
-eXchange Tool) library written by DKRZ is used for this wrapper
-~\cite{YAXTDocs}.
+not called directly, instead a wrapper is used. At initialisation time,
+the wrapper library pre-generates the communication routing tables
+required to perform a halo exchange, which are then reused every time a
+halo exchange is required.
 
-YAXT halo exchanges require that a routing table is pre-generated at
-initialisation time, so each rank needs to supply the following
-to the YAXT call:
+In order to generate the routing table, each rank needs to supply the
+following information to the library:
 
 \begin{itemize}
 
@@ -465,8 +465,21 @@ levels of halo depth
 
 \end{itemize}
 
-The YAXT library then generates a routing table for each depth of halo
-exchange. These are stored until needed to perform a halo exchange.
+Initially, the LFRic project used the infrastructure library component
+of the Earth System Modelling Framework (ESMF)~\cite{ESMFDocs} to
+provide the layer between the model and MPI, but it wasn't particularly
+well suited to the particular problem it was being used for. Although
+routing tables it generated were optimal (the halo exchanges called
+during timestepping were very fast), the time to generate the tables
+became quite long when the model was run at scale. The design of the
+model framework to support the `separation of concerns' led to all the
+halo exchange functionality being neatly encapsulated in the PSy layer.
+This made it relatively easy to try a different library to provide the
+intermadiate layer. A switch was made to use the YAXT (Yet Another
+eXchange Tool)~\cite{YAXTDocs} library written by DKRZ. This provides
+halo exchanges during time stepping that are as fast as those provided
+by ESMF, but the time taken to initialise the routing tables is must
+shorter. 
 
 The API for supporting distributed memory optimisation is very simple. A
 halo exchange function is provided on every field and a flag is
