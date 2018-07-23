@@ -1,6 +1,8 @@
 \documentclass[times]{elsarticle}
 \bibliographystyle{elsarticle-num}
 \usepackage{graphicx,colordvi}
+\usepackage{bm}
+
 \begin{document}
 \begin{frontmatter}
 
@@ -54,14 +56,14 @@ algorithms are necessary to exploit the necessary degree of
 parallelism Exascale computers are likely exhibit.
 
 In collaboration with academic partners, the Met Office is developing
-a new dynamical core, called Gung Ho~\cite{MELVIN2018342}. By
+a new dynamical core, called GungHo~\cite{MELVIN2018342}. By
 employing a mixed Finite Element Method on an unstructured mesh, the
 new dynamical core is designed to maintain the scientific accuracy of
 the current Unified Model (UM) dynamical core (ENDGame~\cite{QJ:QJ2235}),
 whilst allowing improved scalability by avoiding the singular pole of
 the lon-lat grid. A new atmospheric model and software infrastructure,
 named LFRic after Lewis Fry Richardson, is being developed to host the
-Gung Ho dynamical core, as the the structured, lon-lat grid is inherent in the
+GungHo dynamical core, as the structured, lon-lat grid is inherent in the
 data structures of the UM.
 
 The software design is based on a layered architecture and a 
@@ -86,7 +88,7 @@ computationally challenging problems must be tackled. Thus, the
 ability to generate optimisations for current architectures is also
 required. 
 
-The paper is organised as follows, the Gung Ho dynamical core and
+The paper is organised as follows, the GungHo dynamical core and
 computational aspects are presented in section~\ref{sec:GH}. The
 software design for the separation of concerns and PSKAl API are described 
 are described in section~\ref{sec:SoC}. The model infrastructure and
@@ -95,9 +97,111 @@ code generator is presented in section~\ref{sec:Psyclone}. Finally a
 scaling analysis is presented in section~\ref{sec:scal} and
 conclusions drawn in section~\ref{sec:con}.
 
-\section{\label{sec:GH}Gung Ho}
-A bit about Gung Ho, but mostly the unstructured mesh, quads, 2+1D
+\section{\label{sec:GH}GungHo}
+A bit about GungHo, but mostly the unstructured mesh, quads, 2+1D
 mesh, vertically structured. Etc.
+
+\begin{itemize}
+\item 2D Mesh
+\item 2D + 1D extrusion, indirection
+\item equations
+\item mixed fem
+\item fv advection
+\item timestepping
+\item um physics
+\end{itemize}
+
+The GungHo dynamical core was developed to replace the current ENDGame
+dynamical core in the UM. The GungHo model seeks to replicate the 
+accuracy of ENDGame whilst replacing the regular latitude-longitude
+grid with a quasi-uniform mesh and so avoid the problems associated with
+the polar singularities on in ENDGame and the resulting convergence of 
+meridians at the poles. The mesh used in GungHo is an equi-angular
+cubed-sphere, Figure \ref{fig:cubed=sphere}, this has the benefit of near
+uniform resolution across the globe achieved by using quadrilateral cells. 
+However, this quasi-uniform mesh comes as the expense of losing orthogonality
+(the line between two neighbouring cells centers is not, in general, 
+perpendicular to the edge shared between the two cells. Additionally the 
+two polar singularities of the latitude longitude mesh have been replaced 
+by the eight corners of the cubed sphere where only three cells meet at a
+vertex instead of the usual four. The lack of orthogonality and the presence
+of the corner singularities needs to be taken into account when choosing an 
+appropriate numerical method.
+%
+\begin{figure}
+\centering\includegraphics[width=0.8\linewidth]{Cubed-Sphere.pdf}
+\caption{\label{fig:cubed=sphere} Equi-angular cubed-sphere mesh with 
+$12x12$ subdivisions per face, referred to as a $C12$ mesh. This gives 
+$864$ columns of cells. }
+\end{figure}
+%
+
+\textbf{This Section may be better off in the infrastructure part?}
+To generate the 3D mesh this 2D mesh is extruded in the radial direction
+to form a spherical shell of cells. Where orography is present a terrain
+following radial coordinate is used such that every column contains the
+same number of cells. The horizontal mesh is treated as unstructured,
+such that it could easily be changed, such as to a icosahedral mesh, if
+required. The vertical is structured and directly addressed, so that
+a data point is addressed as \textit{map(df,col)+k}, where \textit{col}
+is the horizontal index of the column and \textit{k=0,...,nlayers-1} is
+the index of the vertical layer, \textit{df} is the index of a particular
+data point within the cell, allowing multiple data points within a single cell, 
+finally \textit{map} is an array containing the address of data points at the bottom of 
+the model column.
+Using an extruded mesh of this type with direct access in the vertical, the cost
+of the indirectly addressed horizontal index can be hidden \citet{gmd-9-3803-2016}.
+%
+
+The GungHo dynamical core solves the Euler equations for a perfect gas in a rotating frame
+%
+\begin{eqnarray}
+\frac{\partial\mathbf{u}}{\partial t} & = & -\left(2\bm{\Omega}+\nabla\times\mathbf{u}\right)\times\mathbf{u} - \nabla\left(\frac{1}{2}\mathbf{u}\cdot\mathbf{u} + \Phi\right) - c_p\theta\nabla\Pi,\label{eq:momentum}\\
+\frac{\partial\theta}{\partial t} & = & - \mathbf{u}\cdot\nabla\theta,\label{eq:energy}\\
+\frac{\partial\rho}{\partial t} & = & - \nabla\cdot\left(\mathbf{u}\rho\right)\label{eq:continuity}.
+\end{eqnarray}
+%
+the system is closed by the equation of state
+%
+\begin{equation}
+\Pi^{\frac{1-\kappa}{\kappa}} = \frac{R}{p_0}\rho\theta.\label{eq:eos}
+\end{equation}
+%
+These constitute a set of coupled nonlinear pdes for the vector wind $\mathbf{u}$, 
+the density $\rho$, potential temperature $\theta$ and Exner pressure $\Pi$. 
+Additionally $\bm{\Omega}$ is the rotation rate, $\Phi$ is the geopotential, $p_0$ is a reference pressure, $R$ is the 
+gas constant, $c_p$ is the specific heat at constant pressure and $\kappa\equiv R/c_p$.
+
+In order to maintain a similar
+accuracy to ENDGame on a quasi-uniform mesh a mixed finite element method is used \citep{cotter2012, natale2016},
+this gives the finite element equivalent of the C-grid Charney-Philips staggering
+used in ENDGame. The mixed finite element method involves defining a number
+of finite element spaces and mappings between them. The particular family of spaces \citep{boffi2013} used in
+ GungHo, for a given polynomial order $l$, are: $Q_{l+1}$ containing continuous 
+point wise scalar quantities; $N_l$ containing circulation vectors that have
+continuous tangential components; $RT_l$ containing flux vectors that have 
+continuous normal components; $Q_l^D$ containing discontinuous volume 
+integrated scalars; along with a horizontally discontinuous vertically continuous space
+for $\theta$ \citep{natale2016} to mimic the Charney-Philips grid staggering used in ENDGame. 
+In practice the lowest order spaces $l=0$ are used. 
+See \citet{melvin2018} for a full description of the discretisation used in the GungHo 
+model.
+
+As in ENDGame, to facilitate the use of long timesteps a iterative semi-implicit
+timestepping scheme is used, this requires within each timestep a nonlinear Picard
+iteration to update the nonlinear and advection terms and at each Picard iteration
+a large sparse linear system is solved, which is formed by use of a quasi-Newton method,
+%
+\begin{equation}
+\mathcal{L}\left(\mathbf{x}^n\right)\mathbf{x}' = \mathcal{R}\left(\mathbf{x}^{(k)}\right),\label{eq:quasi-newton}
+\end{equation}
+%
+For the increment $\mathbf{x}'\equiv\mathbf{x}^{(k+1)}-\mathbf{x}^{(k)}$ on the $k^{\rm{th}}$ 
+estimate from the Picard iteration of the prognostic variables $\mathbf{x}\equiv\left(\mathbf{u},\,\theta,\,\rho,\,\Pi\right)$. The linear system $\mathcal{L}\left(\mathbf{x}^n\right)$ is chosen as to contain the terms necessary for stability of the fast acoustic and gravity waves as in \citet{QJ:QJ2235} and is formed from a linearisation about the previous timestep fields $\mathbf{x}^n$. The method used to solve this linear system is detailed in Section \ref{sec:Solver}.
+
+
+
+
 
 \section{\label{sec:SoC}Separation of Concerns}
 Science applications in general and weather and climate codes in
@@ -158,7 +262,7 @@ break the data abstraction of the separation of concerns between the
 maths/science code and architecture specific code.
 
 The design for the LFRic model is based upon computational science
-report from phase 1 of the Gung Ho project~\cite{GHP1_CSR}. By
+report from phase 1 of the GungHo project~\cite{GHP1_CSR}. By
 employing a layered software architecture, the complex parallel code
 code can be kept separate from the science code. The software is
 separated into three layers. The top layer is the algorithm
@@ -191,7 +295,7 @@ and integers for Finite Element Method over an unstructured mesh.
 These coding rules are enforced by using Fortran 2003 object
 orientation style to control the APIs. By restricting the domain of
 the problem from all numerical mathematics to only that required (in
-the first instance) to the Gung Ho dynamical core it is possible to
+the first instance) to the GungHo dynamical core it is possible to
 constrain the parallelism to the PSy layer. By restoring the
 separation of concerns between the science code and the
 parallel/optimisation code means in principle different programming
@@ -209,7 +313,7 @@ read, write, readwrite or increment. This information is embedded in
 Fortran as part of the kernel. Other information encoded in this way
 is the loop iterator (for example {\em cells}), whether the kernel
 operates on a field which lives on a specific function space, whether
-any of the fields live on common function spaces and for FEM kenrnels
+any of the fields live on common function spaces and for FEM kernels
 whether the kernel uses any basis functions. 
 
 The restricted domain, strict control of the APIs between layers and
