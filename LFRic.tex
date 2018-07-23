@@ -2,6 +2,9 @@
 \bibliographystyle{elsarticle-num}
 \usepackage{graphicx,colordvi}
 \usepackage{bm}
+\usepackage{subfig}
+
+\providecommand{\tabularnewline}{\\}
 
 \begin{document}
 \begin{frontmatter}
@@ -56,7 +59,7 @@ algorithms are necessary to exploit the necessary degree of
 parallelism Exascale computers are likely exhibit.
 
 In collaboration with academic partners, the Met Office is developing
-a new dynamical core, called GungHo~\cite{MELVIN2018342}. By
+a new dynamical core, called GungHo~\cite{melvin2018}. By
 employing a mixed Finite Element Method on an unstructured mesh, the
 new dynamical core is designed to maintain the scientific accuracy of
 the current Unified Model (UM) dynamical core (ENDGame~\cite{QJ:QJ2235}),
@@ -98,67 +101,64 @@ scaling analysis is presented in section~\ref{sec:scal} and
 conclusions drawn in section~\ref{sec:con}.
 
 \section{\label{sec:GH}GungHo}
-A bit about GungHo, but mostly the unstructured mesh, quads, 2+1D
-mesh, vertically structured. Etc.
 
-\begin{itemize}
-\item 2D Mesh
-\item 2D + 1D extrusion, indirection
-\item equations
-\item mixed fem
-\item fv advection
-\item timestepping
-\item um physics
-\end{itemize}
-
+The dynamical core in an atmospheric model is responsible for simulating those 
+fluid dynamical processes that are resolved by the underlying mesh. It is then 
+couple to a suite of subgrid physical parametrization schemes for those processes, 
+such as cloud microphysics and convection that are not resolved on the mesh.
 The GungHo dynamical core was developed to replace the current ENDGame
 dynamical core in the UM. The GungHo model seeks to replicate the 
-accuracy of ENDGame whilst replacing the regular latitude-longitude
-grid with a quasi-uniform mesh and so avoid the problems associated with
-the polar singularities on in ENDGame and the resulting convergence of 
+accuracy and stability of ENDGame whilst replacing the regular latitude-longitude
+mesh with a quasi-uniform mesh and so avoid the problems associated with
+the polar singularities in ENDGame, resulting from the convergence of 
 meridians at the poles. The mesh used in GungHo is an equi-angular
-cubed-sphere, Figure \ref{fig:cubed=sphere}, this has the benefit of near
-uniform resolution across the globe achieved by using quadrilateral cells. 
+cubed-sphere, Figure \ref{fig:cubed-sphere}, this has the benefit of near
+uniform resolution across the globe and a maximum/minimum edge length of $~1.3$ achieved by using only quadrilateral cells. 
 However, this quasi-uniform mesh comes as the expense of losing orthogonality
 (the line between two neighbouring cells centers is not, in general, 
-perpendicular to the edge shared between the two cells. Additionally the 
+perpendicular to the edge shared between the two cells). Additionally the 
 two polar singularities of the latitude longitude mesh have been replaced 
-by the eight corners of the cubed sphere where only three cells meet at a
+by the eight corners of the cubed sphere, where only three cells meet at a
 vertex instead of the usual four. The lack of orthogonality and the presence
 of the corner singularities needs to be taken into account when choosing an 
-appropriate numerical method.
+appropriate numerical method to avoid errors being dominated by the corners.
 %
 \begin{figure}
 \centering\includegraphics[width=0.8\linewidth]{Cubed-Sphere.pdf}
-\caption{\label{fig:cubed=sphere} Equi-angular cubed-sphere mesh with 
-$12x12$ subdivisions per face, referred to as a $C12$ mesh. This gives 
-$864$ columns of cells. }
+\caption{\label{fig:cubed-sphere} Equi-angular cubed-sphere mesh as
+used in GungHo with $12x12$ subdivisions per face, 
+referred to as a $C12$ mesh. This gives $864$ columns of cells. }
 \end{figure}
 %
 
-\textbf{This Section may be better off in the infrastructure part?}
-To generate the 3D mesh this 2D mesh is extruded in the radial direction
-to form a spherical shell of cells. Where orography is present a terrain
+\textbf{This paragraph may be better off in the infrastructure part?}
+To generate the 3D mesh this 2D cubed-sphere mesh is extruded in the radial 
+direction to form a spherical shell of cells. Where orography is present a terrain
 following radial coordinate is used such that every column contains the
 same number of cells. The horizontal mesh is treated as unstructured,
-such that it could easily be changed, such as to a icosahedral mesh, if
-required. The vertical is structured and directly addressed, so that
+such that it could easily be changed, for example to one of those considered 
+by \citet{staniforth2012} such as to a icosahedral mesh.
+The vertical is structured and directly addressed, so that
 a data point is addressed as \textit{map(df,col)+k}, where \textit{col}
 is the horizontal index of the column and \textit{k=0,...,nlayers-1} is
 the index of the vertical layer, \textit{df} is the index of a particular
 data point within the cell, allowing multiple data points within a single cell, 
-finally \textit{map} is an array containing the address of data points at the bottom of 
-the model column.
+finally \textit{map} is an array containing the address of data points at 
+the bottom of the model column.
 Using an extruded mesh of this type with direct access in the vertical, the cost
-of the indirectly addressed horizontal index can be hidden \citet{gmd-9-3803-2016}.
+of the indirectly addressed horizontal index can be hidden \citet{gmd-9-3803-2016} 
+provided enough layers are used. Since the current UM uses O(100) layers the 
+cost of the indirection is minimal.
 %
 
-The GungHo dynamical core solves the Euler equations for a perfect gas in a rotating frame
+\subsection{Formulation\label{sec:sub:formulation}}
+The GungHo dynamical core solves the Euler equations for a perfect gas in a 
+rotating frame
 %
 \begin{eqnarray}
 \frac{\partial\mathbf{u}}{\partial t} & = & -\left(2\bm{\Omega}+\nabla\times\mathbf{u}\right)\times\mathbf{u} - \nabla\left(\frac{1}{2}\mathbf{u}\cdot\mathbf{u} + \Phi\right) - c_p\theta\nabla\Pi,\label{eq:momentum}\\
 \frac{\partial\theta}{\partial t} & = & - \mathbf{u}\cdot\nabla\theta,\label{eq:energy}\\
-\frac{\partial\rho}{\partial t} & = & - \nabla\cdot\left(\mathbf{u}\rho\right)\label{eq:continuity}.
+\frac{\partial\rho}{\partial t} & = & - \nabla\cdot\left(\mathbf{u}\rho\right)\label{eq:continuity},
 \end{eqnarray}
 %
 the system is closed by the equation of state
@@ -169,39 +169,114 @@ the system is closed by the equation of state
 %
 These constitute a set of coupled nonlinear pdes for the vector wind $\mathbf{u}$, 
 the density $\rho$, potential temperature $\theta$ and Exner pressure $\Pi$. 
-Additionally $\bm{\Omega}$ is the rotation rate, $\Phi$ is the geopotential, $p_0$ is a reference pressure, $R$ is the 
-gas constant, $c_p$ is the specific heat at constant pressure and $\kappa\equiv R/c_p$.
+Additionally: $\bm{\Omega}$ is the rotation rate; $\Phi$ is the geopotential; 
+$p_0$ is a reference pressure; $R$ is the gas constant; $c_p$ is the specific 
+heat at constant pressure and $\kappa\equiv R/c_p$.
 
+\subsection{Spatial Discretisation\label{sec:sub:spatial}}
 In order to maintain a similar
-accuracy to ENDGame on a quasi-uniform mesh a mixed finite element method is used \citep{cotter2012, natale2016},
-this gives the finite element equivalent of the C-grid Charney-Philips staggering
-used in ENDGame. The mixed finite element method involves defining a number
-of finite element spaces and mappings between them. The particular family of spaces \citep{boffi2013} used in
- GungHo, for a given polynomial order $l$, are: $Q_{l+1}$ containing continuous 
-point wise scalar quantities; $N_l$ containing circulation vectors that have
-continuous tangential components; $RT_l$ containing flux vectors that have 
-continuous normal components; $Q_l^D$ containing discontinuous volume 
-integrated scalars; along with a horizontally discontinuous vertically continuous space
-for $\theta$ \citep{natale2016} to mimic the Charney-Philips grid staggering used in ENDGame. 
-In practice the lowest order spaces $l=0$ are used. 
-See \citet{melvin2018} for a full description of the discretisation used in the GungHo 
-model.
+accuracy to ENDGame on a quasi-uniform mesh a mixed finite element method is 
+used \citep{cotter2012, natale2016}, this gives the finite element equivalent 
+of the C-grid-Charney-Phillips staggering used in ENDGame, but without relying
+on the orthogonality of the mesh for numerical consistency. The mixed finite element
+method is very general in terms of the order of approximation and shape of the 
+underlying mesh, allowing the method to be tailored to specific needs of the 
+application. The mixed finite element method involves defining a number of finite 
+element spaces and differential mappings between them. The particular family of 
+finite element spaces \citep{boffi2013}, for a given polynomial order $p$, used 
+in GungHo are: $Q_{p+1}$ containing continuous 
+point wise scalar quantities; $N_p$ containing circulation vectors that have
+continuous tangential components; $RT_p$ containing flux vectors that have 
+continuous normal components; $Q_p^D$ containing discontinuous volume 
+integrated scalars; along with a horizontally discontinuous vertically continuous 
+space \citep{natale2016} for $\theta$ to mimic the Charney-Phillips grid staggering 
+used in ENDGame.  In practice the lowest order spaces $p=0$ are used, the resulting
+location of the degrees of freedom for these spaces are shown in
+Figure \ref{fig:fem-spaces}. 
+%
+\begin{figure}
+\centering
+\subfloat[]{\includegraphics[width=0.5\linewidth]{W0_dofs.pdf}}%
+\subfloat[]{\includegraphics[width=0.5\linewidth]{W1_dofs.pdf}}\\
+\subfloat[]{\includegraphics[width=0.5\linewidth]{W2_dofs.pdf}}%
+\subfloat[]{\includegraphics[width=0.5\linewidth]{W3_dofs.pdf}}%
+\caption{\label{fig:fem-spaces} Location of degrees of freedom at $p=0$ for 
+(a) $Q_{1}$, (b) $N_0$, (c) $RT_0$ and (d) $Q_0^D$ finite element spaces.
+Circles correspond to scalar degrees of freedom and triangles to vector degrees
+of freedom.}
+\end{figure}
+%
+The velocity field $\mathbf{u}$ is placed in the $RT_0$ space, the vorticity 
+$\xi\equiv\nabla\times\mathbf{u}$ is placed in the $N_0$ space, density, $\rho$, 
+and Exner pressure, $\Pi$, are placed in the $Q_0^D$ space, as mentioned above 
+the potential temperature, $\theta$, is placed in a scalar-space corresponding 
+to the vertical components of $RT_0$ with degrees of freedom located in the
+centre of the top and bottom faces of a cell. See \citet{melvin2018} for a full
+description of the discretisation used in the GungHo model.
 
-As in ENDGame, to facilitate the use of long timesteps a iterative semi-implicit
-timestepping scheme is used, this requires within each timestep a nonlinear Picard
-iteration to update the nonlinear and advection terms and at each Picard iteration
-a large sparse linear system is solved, which is formed by use of a quasi-Newton method,
+\subsection{Advection\label{sec:sub:advection}}
+In order to achieve accuracy similar to that of ENDGame it is important to have 
+a high-order approximation to the scalar advective terms: $\mathbf{u}.\nabla\rho$ 
+and $\mathbf{u}.\nabla\theta$. In ENDGame these are evaluated using a 
+semi-Lagrangian formulation that involves computation of the trajectories that 
+the fluid has taken over a timestep, followed by a high-order multi-dimensional 
+interpolation of the scalar field to the origin of the trajectory. 
+The non-local nature of the trajectory computation can 
+lead to significant communication costs if the trajectory crosses over processor 
+boundaries, which often happens near the poles of the latitude-longitude grid.
+
+In GungHo this semi-Lagrangian scheme is replaced by an Eulerian finite-volume 
+method of lines advection scheme that gives inherent local conservation of mass.
+The method fits a high-order upwind polynomial over a number of
+neighbouring cells and evaluates this at a fixed point to compute the advective 
+term. This only requires a local computation and the stencil is fixed, reducing the 
+amount of computation needed. However, in order to obtain a stable scheme it is 
+wrapped in a multi-stage evaluation, this means that the advection update needs to be 
+computed a number of times per Picard iteration, nominally 3 stages are used. 
+Future work is evaluating the use of flux-form Semi-Lagrangian scheme (COSMIC) 
+\citet{Leonard1996} to replace the current scheme. This carries many of the 
+benefits of the semi-Lagrangian scheme used in ENDGame but without the 
+communication costs (due to use of a quasi-uniform mesh) as well a simplification 
+to the computation from using a dimensionally split formulation that only requires 
+one-dimensional interpolation.
+
+\subsection{Timestepping\label{sec:sub:timestepping}}
+As in ENDGame, to facilitate the use of long timesteps, a two time-level 
+iterative semi-implicit timestepping scheme is used. This requires, within each 
+timestep, a nonlinear Picard iteration to update the nonlinear and advection terms 
+and at each iteration a large sparse linear system is solved, which is formed by 
+use of a quasi-Newton method,
 %
 \begin{equation}
 \mathcal{L}\left(\mathbf{x}^n\right)\mathbf{x}' = \mathcal{R}\left(\mathbf{x}^{(k)}\right),\label{eq:quasi-newton}
 \end{equation}
 %
-For the increment $\mathbf{x}'\equiv\mathbf{x}^{(k+1)}-\mathbf{x}^{(k)}$ on the $k^{\rm{th}}$ 
-estimate from the Picard iteration of the prognostic variables $\mathbf{x}\equiv\left(\mathbf{u},\,\theta,\,\rho,\,\Pi\right)$. The linear system $\mathcal{L}\left(\mathbf{x}^n\right)$ is chosen as to contain the terms necessary for stability of the fast acoustic and gravity waves as in \citet{QJ:QJ2235} and is formed from a linearisation about the previous timestep fields $\mathbf{x}^n$. The method used to solve this linear system is detailed in Section \ref{sec:Solver}.
+for the increment $\mathbf{x}'\equiv\mathbf{x}^{(k+1)}-\mathbf{x}^{(k)}$ on the $k^{\rm{th}}$ 
+estimate from the Picard iteration of the prognostic variables $\mathbf{x}\equiv\left(\mathbf{u},\,\theta,\,\rho,\,\Pi\right)$. The linear system $\mathcal{L}\left(\mathbf{x}^n\right)$ is chosen as to contain the terms necessary for stability of the fast acoustic and gravity waves as in \citet{QJ:QJ2235} and is formed from a linearisation about the previous timestep fields $\mathbf{x}^n$. The method used to solve this linear system is detailed in Section \ref{sec:Solver}. An overview of the 
+timestep is given in Table \ref{tab:timestep}.
+%
+\begin{table}
+\begin{centering}
+\begin{tabular}{l}
+\hline 
+\textbf{do} $n=1,N$ (begin time-step loop)\tabularnewline
+\hspace{0.5cm}Set $\mathbf{x}^{(1)} = \mathbf{x}^n$\tabularnewline
+\hspace{0.5cm}Compute $\mathcal{L}\left(\mathbf{x}^n\right)$\tabularnewline
+\hspace{0.5cm}Compute $R\left(\mathbf{x}^n\right)$\tabularnewline
+\hspace{0.5cm}\textbf{do} $k=1,K$ (begin Picard loop)\tabularnewline
+\hspace{1.0cm}Compute advective terms $R^A\left(\mathbf{x}^{(k)},\mathbf{x}^{(n)}\right)$\tabularnewline
+\hspace{1.0cm}Compute $R\left(\mathbf{x}^(k)\right)$\tabularnewline
+\hspace{1.0cm}Set $\mathcal{R}^{(k)} = R^n + R^{(k)} + R^A$\tabularnewline
 
-
-
-
+\hspace{1.0cm}Solve $\mathcal{L}\left(\mathbf{x}^n\right)\mathbf{x}' = \mathcal{R}^{(k)}$\tabularnewline
+\hspace{0.5cm}\textbf{end do}\tabularnewline
+\textbf{end do}\tabularnewline
+\hline
+\end{tabular}
+\end{centering}
+\caption{\label{tab:timestep}Overview of a single timestep in the GungHo dynamical core, typically $K=4$.}
+\end{table}
+%
 
 \section{\label{sec:SoC}Separation of Concerns}
 Science applications in general and weather and climate codes in
