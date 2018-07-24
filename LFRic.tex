@@ -18,7 +18,7 @@
 \begin{document}
 \begin{frontmatter}
 
-\title{LFRic and PSyclone: Building a Domain Specific Language for Weather and Climate models}
+\title{LFRic: The design and implementation of a Weather and Climate model}
 
 \author[met]{S.~Adams}
 \author[hartree]{R.~W.~Ford}
@@ -266,7 +266,7 @@ use of a quasi-Newton method,
 \end{equation}
 %
 for the increment $\mathbf{x}'\equiv\mathbf{x}^{(k+1)}-\mathbf{x}^{(k)}$ on the $k^{\rm{th}}$ 
-estimate from the Picard iteration of the prognostic variables $\mathbf{x}\equiv\left(\mathbf{u},\,\theta,\,\rho,\,\Pi\right)$. The linear system $\mathcal{L}\left(\mathbf{x}^n\right)$ is chosen as to contain the terms necessary for stability of the fast acoustic and gravity waves as in \cite{QJ:QJ2235} and is formed from a linearisation about the previous timestep fields $\mathbf{x}^n$. The method used to solve this linear system is detailed in Section \ref{sec:Solver}. An overview of the 
+estimate from the Picard iteration of the prognostic variables $\mathbf{x}\equiv\left(\mathbf{u},\,\theta,\,\rho,\,\Pi\right)$. The linear system $\mathcal{L}\left(\mathbf{x}^n\right)$ is chosen as to contain the terms necessary for stability of the fast acoustic and gravity waves as in \cite{}{QJ:QJ2235} and is formed from a linearisation about the previous timestep fields $\mathbf{x}^n$. The method used to solve this linear system is detailed in Section \ref{sec:Solver}. An overview of the 
 time-step is given in Table \ref{tab:timestep}.
 %
 \begin{table}
