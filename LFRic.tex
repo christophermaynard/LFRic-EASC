@@ -748,6 +748,10 @@ Here, the `psy' object contains PSyclone's internal represenation of
 the PSy layer that it will generate. The script takes this, modifies
 it using transformations and then returns it.
 
+Applying the OpenMP script to the invoke call described in
+section~\ref{sec:SoC} results in the following generated PSy layer
+code shown in listing~\ref{lst:PSy_omp}. 
+
 \begin{lstlisting}[language=Fortran, numbers=left,caption={Code 
 fragment of the generated PSy layer},label={lst:PSy_omp}]
   nlayers = v_proxy%vspace%get_nlayers()
