@@ -88,7 +88,7 @@ operations on global fields are performed. The bottom layer is the kernel layer
 where these operations are expressed on a single column of data. In between is the
 Parallelisation System or PSy layer, where the horizontal looping and parallelism is
 expressed. This abstraction, termed PSyKAl, is written in Fortran with Fortran 2003
-Object Orientation to encode the rules of the API. \textcolor{red}{\em (Comment: Define what API means?)}
+Object Orientation to encode the rules of the API. \textcolor{red}{\em (Comment: Define what API means!)}
 Moreover, a Python code called PSyclone can parse the algorithm and kernel layers and
 generate the PSy layer with different target programming models. In effect, the PSyKAl API
 and PSyclone are a Domain Specific Embedded Language (DSEL). Natural science code which
@@ -107,7 +107,12 @@ Section~\ref{sec:GH}. The software design for the separation of
 concerns and PSyKAl API are described in
 Section~\ref{sec:SoC}. The model infrastructure and use of libraries
 is discussed in Section~\ref{sec:lib}. PSyclone, the code generator is
-presented in Section~\ref{sec:psyclone}. Finally a scaling analysis is
+presented in Section~\ref{sec:psyclone} and method used to solve this linear system 
+
+
+some details of linear \section{\label{sec:Solver}Linear solvers and preconditioners} 
+
+Finally a scaling analysis is
 presented in Section~\ref{sec:scal} and conclusions drawn in
 section~\ref{sec:con}.
 
@@ -146,7 +151,10 @@ corners.
 \centering\includegraphics[width=0.8\linewidth]{Cubed-Sphere.pdf}
 \caption{\label{fig:cubed-sphere} Equi-angular cubed-sphere mesh as
 used in GungHo with $12x12$ subdivisions per face, 
-referred to as a $C12$ mesh. This gives $864$ columns of cells. }
+referred to as a $C12$ mesh. This gives $864$ columns of cells. 
+\textcolor{red}{(Comment: Bits of fluff on the diagram. 
+Where did this come and is an acknowledged required?})
+}
 \end{figure}
 %
 
@@ -224,7 +232,9 @@ for these spaces are shown in Figure~\ref{fig:fem-spaces}.
 \caption{\label{fig:fem-spaces} Location of degrees of freedom at $p=0$ for 
 (a) $Q_{1}$, (b) $N_0$, (c) $RT_0$ and (d) $Q_0^D$ finite element spaces.
 Circles correspond to scalar degrees of freedom and triangles to vector degrees
-of freedom.}
+of freedom.
+\textcolor{red}{(Comment: Arrow head seems smaller than the others. Particularly confusing when it is the front.})
+}
 \end{figure}
 %
 The velocity field $\mathbf{u}$ is placed in the $RT_0$ space; the vorticity 
@@ -342,7 +352,14 @@ Many programming models exist, MPI and Partitioned Global Address
 Space (PGAS) languages, such as Co Array Fortran, Unified Parallel C,
 Chapel and GASPI for distributed memory, new programming languages such
 as OpenCL or CUDA and directive based programming models for threaded
-and shared memory parallelism such as OpenMP or OpenACC. However,
+and shared memory parallelism such as OpenMP or OpenACC.
+\textcolor{red}{(Comment: CUDA is certainly a programming language, or like one, 
+but OpenCL is a library as far as I can see. 
+Is it okay to refer to it as a programming language or 
+would something else be more appropriate?
+In general this sentence runs on a lot. 
+Maybe try breaking it into shorter ones.)} 
+However,
 the programming models lag behind in development of the rapidly evolving computer
 architectures and particular models lack feature or processor coverage
 making the choice of programming model difficult. This is ambiguity is
@@ -366,7 +383,7 @@ maths/science code and architecture specific code.
 The design for the LFRic model is based upon a computational science
 report from Phase 1 of the GungHo project~\cite{GHP1_CSR}. By
 employing a layered software architecture, the complex parallel code
-code can be kept separate from the science code. As outlined in 
+can be kept separate from the science code. As outlined in 
 Section~\ref{sec:intro}, the software is separated into three layers.
 Algorithms are expressed as operations on global, data-parallel field objects,
 in the top algorithm layer. The middle PSy layer (Section~\ref{sec:intro}) 
@@ -459,14 +476,16 @@ invoke procedure from the Algorithm layer},label={lst:invoke}]
              matrix_vector_kernel_type(v(m), s(m), mm), &
              enforce_bc_kernel_type( v(m) ) )
 \end{lstlisting}
+\textcolor{red}{(Comment: Code is usually presented in a monospaced font, not 
+a proportional font equally spaced.)}
 
 There are three kernels in this invoke. The first \verb+setval_c+ is
-an example of a {\em point-wise} kernel. The same operation , setting all
+an example of a {\em point-wise} kernel. The same operation, setting all
 all the values of the field to the same scalar, is applied
 to each DoF so no FEM structure is required.
 This is an example of a {\em built-in} operation generated in place in 
 the PSy layer by PSyclone. The second
-kernel is written as a constructor call to the kernel, so that it is
+kernel is written as a constructor call to the kernel (\textcolor{red}{(Comment: "Constructor of the kernel"?)}, so that it is
 valid Fortran. The arguments to this call \verb+v+ and \verb+s+ are
 {\em fields} and \verb+mm+ is an {\em operator}, in this case a mass
 matrix.
@@ -481,6 +500,8 @@ generated Algorithm layer code},label={lst:invoke_56}]
 
 Shown in listing~\ref{lst:PSy1} is a code fragment from the generated PSy layer for
 the invoke shown in listing~\ref{lst:invoke}.
+\textcolor{red}{(Comment: This listing is broken over two pages. 
+Is there a command to enforce keeping it together?)}
 \begin{lstlisting}[language=Fortran, numbers=left,caption={Code 
 fragment of the generated PSy layer},label={lst:PSy1}]
  nlayers = v_proxy%vspace%get_nlayers()
@@ -573,12 +594,12 @@ the data object, in this case fields and operators\footnote{An
 the data acess pattern for this data object, {\em e.g.} \verb+GH_INC+ means the data is
 incremented. Thirdly, which function space the data lives on. In this case, the
 kernel is general and can operate over any space, hence, the
-\verb+any_space_n+. Whilst the $n$ can be any, the function space of the
+\verb+any_space_n+. Whilst the $n$ can be any number, the function space of the
 first field must correspond to the first function space of the operator and the
 function space of second field must correspond to the second function
 space of the operator. 
 
-{\em why this is great}.
+{\em why this is great} \textcolor{red}{(Comment: Unfinished paragraph?)}
 
 
 \section{\label{sec:lib}Infrastructure}
@@ -600,7 +621,10 @@ provide the infrastructure following an object-orientated approach. As
 such, much of the infrastructure is provided through a hierarchy of
 objects that culminates in the field object that is used within the
 science code. The hierarchy of objects is shown in
-Figure~\ref{fig:objects}. Two-dimensional topological and positional
+Figure~\ref{fig:objects}. 
+\textcolor{red}{(Hierarchy usually implies inheritance which is not the case here. 
+Maybe this diagram should be rendered as UML to make clear the nature of the associations.)}
+Two-dimensional topological and positional
 information about the global mesh is read into the global model object.
 This is passed to a partitioner to generate a partition object that
 describes what portion of the global mesh the local processing element
@@ -630,7 +654,10 @@ model codes has been done for many years, using halo exchanges as a
 method of providing communication between partitions. The LFRic
 infrastructure has a data model with significant differences to many
 older models which will affect the way distributed memory parallelism is
-implemented:
+implemented \textcolor{red}{(Comment: Different to older atmosphere models 
+which use Cartesian meshes but not different to, for instance FEA structural 
+models, which use tetrahedral meshes.Maybe it needs to be made more clear when 
+you talk about "large parallel model codes" exactly what sort of model is meant?)}:
 
 \begin{enumerate}
 
@@ -647,8 +674,8 @@ optimisation reasons, the looping structure within LFRic is \em{k}-innermost
 \textcolor{red}{\em (Comment: Perhaps explain that k refers to vertical?)};
 
 \item LFRic supports a finite-element formulation which means that data
-are held as ``degrees of freedom'' (dofs) on all the different
-entities within the mesh: cell volumes, faces, edges and vertices.
+are held as dofs on all the different entities within the mesh: cell 
+volumes, faces, edges and vertices.
 Partitioning the domain along cell boundaries will always lead to
 partitions which need to share data values. Sharing data makes assigning
 ownership of that data, and therefore, halo swapping more complex.
@@ -657,7 +684,10 @@ ownership of that data, and therefore, halo swapping more complex.
 
 The halo exchanges are achieved by passing information between processes
 using MPI. For performance and ease of use reasons, the MPI library is
-not called directly, instead a wrapper is used. At initialisation time,
+not called directly, instead a wrapper is used. 
+\textcolor{red}{(Comment: Is "wrapper" the correct term to use. It maybe 
+does enough to be considered a communication library in its own right.)}
+At initialisation time,
 the wrapper library pre-generates the communication routing tables
 required to perform a halo exchange, which are then reused every time a
 halo exchange is required.
@@ -829,6 +859,9 @@ extracted.
 \centering\includegraphics[width=0.8\linewidth]{psyclone_flow.pdf}
 \caption{\label{fig:psyclone-arch}Data flow within the PSyclone architecture.}
 \end{figure}
+
+\textcolor{red}{(Comment: Data flow figure doesn't show rewriting of kernels. 
+Is this intentional, for clarity, or is it something we want to include?)}
 
 PSyclone must then perform two tasks: firstly, generate an internal
 representation, known as a {\em schedule}, of a PSy layer routine for each invoke in
@@ -1039,6 +1072,7 @@ with all of the necessary arguments declared. The kernel developer
 then need only implement the body of the kernel.
 
 \section{\label{sec:Solver}Linear solvers and preconditioners}
+
 Iterative solvers for large sparse linear systems of equations are
 required in several places in the model. For example, since mass
 matrices in the finite element discretisation are not diagonal, they
@@ -1058,10 +1092,13 @@ the approach already employed in the ENDGame model~\cite{QJ:QJ2235},
 an outer iteration over the full system is still required due to the
 non-diagonal nature of the finite element mass matrices. Altogether
 this results in a rather complex solver.
+
 \subsection{Solver infrastructure}
+
 To allow easy implementation of sophisticated nested iterative solvers
 and preconditioners, a dedicated abstraction was developed by using
-advanced object oriented features of Fortran 2003. This approach
+advanced object oriented features of Fortran 2003. 
+\textcolor{red}{(Comment: Advanced for F2003 or advenced regarding to older Fortran?)} This approach
 follows similar design philosophies in widely used linear algebra
 libraries such as PETSc~\cite{Balay1997,Balay2018} and DUNE-ISTL~\cite{Blatt2007}. 
 More specifically, the implementation in LFRic uses
@@ -1091,6 +1128,7 @@ Fig.~\ref{fig:class_hierarchy}, left):
     \label{fig:class_hierarchy}
   \end{center}
 \end{figure}
+\textcolor{red}{(Comment: Are these actual UML diagrams?)}
 Each of those types is derived from an abstract base type. The
 iterative solver types operate on generic vector types and are passed
 preconditioner and linear operator objects which adhere to the
@@ -1127,7 +1165,7 @@ passed to suitable existing linear solvers.
 
 In addition to this more traditional approximate Schur-complement
 approach for solving the full linear system, the development of
-solvers based on a hybridisation approach is currently explored. Since
+solvers based on a hybridisation approach is currently being explored. Since
 an exact Schur-complement can be formed in this case, hybridisation
 avoids the expensive iteration over the full linear system, and
 potentially leads to significant improvements in performance.
@@ -1136,7 +1174,8 @@ potentially leads to significant improvements in performance.
 
 To precondition the strongly anisotropic Helmholtz-operator for the
 pressure system, the tensor-product multigrid approach in~\cite{Borm2001} 
-is used in LFRic. This is a more advanced solver than
+is used in LFRic \textcolor{red}{(Comment: Technically, it is not yet used. Is intended perhaps.)}. 
+This is a more advanced solver than
 the current tridiagonal vertical-only preconditioner in the ENDGame
 model. The multigrid algorithm currently being developed in LFRic has been tested
 extensively for representative elliptic equations in atmospheric
