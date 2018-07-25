@@ -88,7 +88,7 @@ operations on global fields are performed. The bottom layer is the kernel layer
 where these operations are expressed on a single column of data. In between is the
 Parallelisation System or PSy layer, where the horizontal looping and parallelism is
 expressed. This abstraction, termed PSyKAl, is written in Fortran with Fortran 2003
-Object Orientation to encode the rules of the API. \textcolor{red}{\em (Comment: Define what API means!)}
+Object Orientation to encode the rules of the application programming interface (hereafter API). 
 Moreover, a Python code called PSyclone can parse the algorithm and kernel layers and
 generate the PSy layer with different target programming models. In effect, the PSyKAl API
 and PSyclone are a Domain Specific Embedded Language (DSEL). Natural science code which
@@ -107,14 +107,10 @@ Section~\ref{sec:GH}. The software design for the separation of
 concerns and PSyKAl API are described in
 Section~\ref{sec:SoC}. The model infrastructure and use of libraries
 is discussed in Section~\ref{sec:lib}. PSyclone, the code generator is
-presented in Section~\ref{sec:psyclone} and method used to solve this linear system 
-
-
-some details of linear \section{\label{sec:Solver}Linear solvers and preconditioners} 
-
-Finally a scaling analysis is
-presented in Section~\ref{sec:scal} and conclusions drawn in
-section~\ref{sec:con}.
+presented in Section~\ref{sec:psyclone} and linear solvers and 
+preconditioners are presented in Section~\ref{sec:Solver}.
+Finally a scaling analysis is presented in Section~\ref{sec:scal} and 
+conclusions drawn in Section~\ref{sec:con}.
 
 \section{\label{sec:GH}GungHo}
 
@@ -618,13 +614,10 @@ hierarchy used in the LFRic infrastructure to support the field object}
 
 Within the development of LFRic there has been a conscious effort to
 provide the infrastructure following an object-orientated approach. As
-such, much of the infrastructure is provided through a hierarchy of
-objects that culminates in the field object that is used within the
-science code. The hierarchy of objects is shown in
-Figure~\ref{fig:objects}. 
-\textcolor{red}{(Hierarchy usually implies inheritance which is not the case here. 
-Maybe this diagram should be rendered as UML to make clear the nature of the associations.)}
-Two-dimensional topological and positional
+such, much of the infrastructure is provided through a family of
+objects that ultimately support the field object that is used within the
+science code. The objects are shown in
+Figure~\ref{fig:objects}. Two-dimensional topological and positional
 information about the global mesh is read into the global model object.
 This is passed to a partitioner to generate a partition object that
 describes what portion of the global mesh the local processing element
@@ -633,15 +626,15 @@ combined to form a mesh object that extrudes the two-dimensional mesh
 information in the vertical for just the part of the mesh that will be
 used on the local processing element to form a local, three-dimensional
 representation of the mesh. The way the data that is held within the
-field object, relates to the mesh is described by the function space.
+field object relates to the mesh is described by the function space.
 
 Most of the infrastructure is accessed through the field object. So, for
 example if a halo exchange is required on a field, the halo exchange
-method on the field object is called. This infrastructure application
-programming interface (API) is used by the PSy layer to access
+method on the field object is called. This infrastructure
+API is used by the PSy layer to access
 information and functionality.
 
-\subsection{\label{sec:distmem}Distributed Memory Optimisation}
+\subsection{\label{sec:sub:distmem}Distributed Memory Optimisation}
 
 Distributed memory parallelism is achieved by partitioning the full
 (global) domain into smaller sections (partitioned or local domains).
@@ -650,14 +643,12 @@ Data in these areas are provided from other partitions that own that
 section of the domain.
 
 Performing halo exchanges is not unique to LFRic. Running large parallel
-model codes has been done for many years, using halo exchanges as a
+weather and climate model codes has been done for many years, using
+halo exchanges as a
 method of providing communication between partitions. The LFRic
-infrastructure has a data model with significant differences to many
-older models which will affect the way distributed memory parallelism is
-implemented \textcolor{red}{(Comment: Different to older atmosphere models 
-which use Cartesian meshes but not different to, for instance FEA structural 
-models, which use tetrahedral meshes.Maybe it needs to be made more clear when 
-you talk about "large parallel model codes" exactly what sort of model is meant?)}:
+infrastructure has a data model with significant differences to previous
+models which will affect the way distributed memory parallelism is
+implemented:
 
 \begin{enumerate}
 
@@ -670,12 +661,12 @@ data point to a horizontally adjacent data point requires using a lookup
 table, which is slower than using direct addressing. In order to recover
 some code performance, fields are laid out in memory so that vertically
 adjacent data points are next to each other, which means that, for
-optimisation reasons, the looping structure within LFRic is \em{k}-innermost
-\textcolor{red}{\em (Comment: Perhaps explain that k refers to vertical?)};
+optimisation reasons, the looping structure within LFRic is vertical
+looping innermost;
 
 \item LFRic supports a finite-element formulation which means that data
-are held as dofs on all the different entities within the mesh: cell 
-volumes, faces, edges and vertices.
+are held as dofs on all the different
+entities within the mesh: cell volumes, faces, edges and vertices.
 Partitioning the domain along cell boundaries will always lead to
 partitions which need to share data values. Sharing data makes assigning
 ownership of that data, and therefore, halo swapping more complex.
@@ -699,8 +690,7 @@ following information to the library:
 
 \item A list of all the global dof ids of all the locally owned dofs;
 
-\item A list of all the global dof ids of all the dofs in the increasing.
-levels of halo depth 
+\item A list of all the global dof ids of all the dofs in the halos.
 
 \end{itemize}
 
@@ -715,10 +705,10 @@ model framework to support the `separation of concerns' led to all the
 halo exchange functionality being neatly encapsulated in the PSy layer.
 This made it relatively easy to try a different library to provide the
 intermediate layer. A switch was made to use the YAXT (Yet Another
-eXchange Tool)~\cite{YAXTDocs} library written by DKRZ. This provides
+eXchange Tool)~\cite{YAXTDocs} library. This provides
 halo exchanges during time stepping that are as fast as those provided
 by ESMF, but the time taken to initialise the routing tables is much
-shorter. \textcolor{red}{\em (Comment: Reference to support this conclusion?)} 
+shorter. \textcolor{red}{\em (Comment: Reference to support this conclusion?)}
 
 The API for supporting distributed memory optimisation is very simple. A
 halo exchange function is provided on every field and a flag is
@@ -727,36 +717,35 @@ cells is up to date with the owner of that data (`clean' halos) or
 whether a parallel computation has updated the field on the owning
 partition and the local halos are out of date (`dirty' halos). When the
 PSy layer determines that a halo exchange may be required, it first
-checks the state of the halos and if, and only if, they are `dirty' it calls the halo
+checks the state of the halos and if (and only if) they are `dirty' it calls the halo
 exchange functionality.
 
-\subsection{\label{sec:sharedmem}Shared Memory Optimisation}
+\subsection{\label{sec:sub:sharedmem}Shared Memory Optimisation}
 
 As with all the parallelisation within LFRic, the shared memory
-parallelism is implemented within the PSy layer. The directives used to
-implement the shared memory parallelism are inserted into the PSy layer
-code. The finite-element formulation makes use of data on mesh entities
-shared by more than one cell. That means that two threads working on
-different cells may try writing to a dof shared between the cells at the
-same time. In order to prevent these write contentions, the mesh is
-split into collections of cells such that there can be no write
-contentions within a collection, so calculations on the cells within a
-collections can be run in parallel. Each of these parallel collections
-are then run sequentially and there are no write contentions. The
-collections are often named after different colours, so the process is
-known as {\em mesh colouring}. The information and functionality to support
+parallelism is implemented within the PSy layer. The directives that
+control the shared memory parallelism are inserted into the PSy layer
+code. The finite element formulation makes use of data on mesh entities
+shared by more than one cell. Two different threads working on
+adjacent cells may try writing to a dof shared between the cells at the
+same time.
+{\em Graph colouring} is applied to the mesh so that no cells of any one
+colour share dofs. This means parallel threads can run over the whole
+set of cells within a particular colour and safely write dof values
+without contention.
+The information and functionality to support
 colouring within the shared memory parallelism is provided by the LFRic
 infrastructure.
 
 When the mesh object is created, it is coloured by the infrastructure
 and information about the colouring is stored, so it can be used from
-within the PSy layer. Infrastructure provides the number of colours,
+within the PSy layer. The infrastructure provides the number of colours,
 the number of cells in each colour and which cells are present in each
 colour. Shared memory parallel directives are placed in the PSy layer
 and the looping can be made safe using the colouring information
 provided by the infrastructure. 
 
-\subsection{\label{sec:io}Parallel I/O}
+\subsection{\label{sec:sub:io}Parallel I/O}
 
 A consequence of models running over many thousands of cores is a requirement
 for scalable parallel I/O. A computationally optimised model is of little practical
@@ -1093,7 +1082,7 @@ an outer iteration over the full system is still required due to the
 non-diagonal nature of the finite element mass matrices. Altogether
 this results in a rather complex solver.
 
-\subsection{Solver infrastructure}
+\subsection{\label{sec:sub:solvinf}Solver infrastructure}
 
 To allow easy implementation of sophisticated nested iterative solvers
 and preconditioners, a dedicated abstraction was developed by using
