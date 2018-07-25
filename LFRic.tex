@@ -1,4 +1,4 @@
-\documentclass[times]{elsarticle}
+\documentclass[review,times]{elsarticle}
 \bibliographystyle{elsarticle-num}
 \usepackage{graphicx,colordvi}
 \usepackage{bm}
@@ -18,7 +18,7 @@
 \begin{document}
 \begin{frontmatter}
 
-\title{LFRic: The design and implementation of a Weather and Climate model}
+\title{LFRic: Meeting the challenges of scalability and performance portability in Weather and Climate models}
 
 \author[met]{S.~Adams}
 \author[hartree]{R.~W.~Ford}
@@ -34,8 +34,6 @@
 \author[downunder]{M.~Rezny}
 \author[met]{B.~Shipway}
 \author[met]{R.~Wong}
-
-
 
 
 \address[met]{Met Office, FitzRoy Road, Exeter, EX1 3PB}
@@ -54,6 +52,7 @@
 
 \end{frontmatter}
 
+\newpage
 \section{Introduction}
 In common with many science applications, Exascale computing presents
 a disruptive change for weather and climate models. However, the
@@ -463,43 +462,11 @@ Shown below in listing~\ref{lst:PSy1} is a code fragment from the generated PSy 
 the invoke shown in listing~\ref{lst:invoke}.
 \begin{lstlisting}[language=Fortran, numbers=left,caption={Code 
 fragment of the generated PSy layer},label={lst:PSy1}]
- nlayers = v_proxy%vspace%get_nlayers()
- !
- ! Create a mesh object
- !
- mesh => v%get_mesh()
- !
- ! Look-up dofmaps for each function space
- !
- map_any_space_1_v => v_proxy%vspace%get_whole_dofmap()
- map_any_space_2_s => s_proxy%vspace%get_whole_dofmap()
- !
- ! Initialise number of DoFs for any_space_1_v
- !
- ndf_any_space_1_v = v_proxy%vspace%get_ndf()
- undf_any_space_1_v = v_proxy%vspace%get_undf()
- !
- ! Initialise number of DoFs for any_space_2_s
- !
- ndf_any_space_2_s = s_proxy%vspace%get_ndf()
- undf_any_space_2_s = s_proxy%vspace%get_undf()
- !
- ! Call kernels and communication routines
- !
- DO df=1,v_proxy%vspace%get_last_dof_owned()
-   v_proxy%data(df) = 0.0_r_def
- END DO 
- !
- ! Set halos dirty/clean for fields modified in the above loop
- !
  CALL v_proxy%set_dirty()
- !
  CALL v_proxy%halo_exchange(depth=1)
- !
  IF (s_proxy%is_dirty(depth=1)) THEN
    CALL s_proxy%halo_exchange(depth=1)
  END IF 
- !
  DO cell=1,mesh%get_last_halo_cell(1)
    CALL matrix_vector_code(cell, nlayers, v_proxy%data, &
       s_proxy%data, mm_proxy%ncell_3d, mm_proxy%local_stencil, &
@@ -508,11 +475,7 @@ fragment of the generated PSy layer},label={lst:PSy1}]
       ndf_any_space_2_s, undf_any_space_2_s, &
       map_any_space_2_s(:,cell))
   END DO 
-  !
-  ! Set halos dirty/clean for fields modified in the above loop
-  !
   CALL v_proxy%set_dirty()
-  !
   CALL v_proxy%halo_exchange(depth=1)
 \end{lstlisting}
 Lines 1-20 are the calls to the LFRic infrastructure to pull out
@@ -895,101 +858,57 @@ Although PSyclone transformations may be applied within a Python
 interactive session, they will typically be used during the
 compilation phase of a potentially large application. Therefore,
 PSyclone allows (Python) transformation scripts to be supplied
-on the command line. As an example, shown below in
-listing~\ref{lst:omp.py} is a python script which is sufficient
-to add OpenMP parallelism to the whole LFRic code base.
+on the command line. For example, to add OpenMP to the PSy layer,
+two transformations need to be applied. The colouring transformation
+(in the case of fields on horizontally continous spaces) is to all
+loops in the schedule, then all loops, except the loop over colours,
+have the openMP transformations applied. This script has 17 lines of
+executable python and is all that is required to apply OpenMP to the
+whole model. 
 
-\begin{lstlisting}[language=python,caption={Python script for applying
-transformations to a PSyclone schedule.},label={lst:omp.py}]
-def trans(psy):
-    ''' Applies PSyclone colouring & OpenMP transformations. '''
-    ctrans = Dynamo0p3ColourTrans()
-    otrans = Dynamo0p3OMPLoopTrans()
-    oregtrans = OMPParallelTrans()
-
-    # Loop over all of the invokes in the PSy object
-    for invoke in psy.invokes.invoke_list:
-
-        schedule = invoke.schedule
-
-        # Colour loops over cells unless they are on discontinuous
-        # spaces (W3, WTHETA and W2V) or over dofs
-        for loop in schedule.loops():
-            if loop.iteration_space == "cells" \
-                and loop.field_space.orig_name \
-                    not in DISCONTINUOUS_FUNCTION_SPACES:
-                schedule, _ = ctrans.apply(loop)
-
-        # Add OpenMP to loops unless they are over colours
-        for loop in schedule.loops():
-            if loop.loop_type != "colours":
-                schedule, _ = oregtrans.apply(loop)
-                schedule, _ = otrans.apply(loop, reprod=True)
-    return psy
-\end{lstlisting}
-Here, the `psy' object contains PSyclone's internal represenation of
-the PSy layer that it will generate. The script takes this, modifies
-it using transformations and then returns it.
+%\begin{lstlisting}[language=python,caption={Python script for applying
+%transformations to a PSyclone schedule.},label={lst:omp.py}]
+%def trans(psy):
+%    ''' Applies PSyclone colouring & OpenMP transformations. '''
+%    ctrans = Dynamo0p3ColourTrans()
+%    otrans = Dynamo0p3OMPLoopTrans()
+%    oregtrans = OMPParallelTrans()
+%
+%    # Loop over all of the invokes in the PSy object
+%    for invoke in psy.invokes.invoke_list:
+%
+%        schedule = invoke.schedule
+%
+%        # Colour loops over cells unless they are on discontinuous
+%        # spaces (W3, WTHETA and W2V) or over dofs
+%        for loop in schedule.loops():
+%            if loop.iteration_space == "cells" \
+%                and loop.field_space.orig_name \
+%                    not in DISCONTINUOUS_FUNCTION_SPACES:
+%                schedule, _ = ctrans.apply(loop)
+%
+%        # Add OpenMP to loops unless they are over colours
+%        for loop in schedule.loops():
+%            if loop.loop_type != "colours":
+%                schedule, _ = oregtrans.apply(loop)
+%                schedule, _ = otrans.apply(loop, reprod=True)
+%    return psy
+%\end{lstlisting}
+%Here, the `psy' object contains PSyclone's internal represenation of
+%the PSy layer that it will generate. The script takes this, modifies
+%it using transformations and then returns it.
 
 Applying the OpenMP script to the invoke call described in
 section~\ref{sec:SoC} results in the following generated PSy layer
 code shown in listing~\ref{lst:PSy_omp}. 
-
 \begin{lstlisting}[language=Fortran, numbers=left,caption={Code 
 fragment of the generated PSy layer},label={lst:PSy_omp}]
-  nlayers = v_proxy%vspace%get_nlayers()
-  !
-  ! Create a mesh object
-  !
-  mesh => v%get_mesh()
-  !
-  ! Look-up dofmaps for each function space
-  !
-  map_any_space_1_v => v_proxy%vspace%get_whole_dofmap()
-  map_any_space_2_s => s_proxy%vspace%get_whole_dofmap()
-  !
-  ! Initialise number of DoFs for any_space_1_v
-  !
-  ndf_any_space_1_v = v_proxy%vspace%get_ndf()
-  undf_any_space_1_v = v_proxy%vspace%get_undf()
-  !
-  ! Initialise number of DoFs for any_space_2_s
-  !
-  ndf_any_space_2_s = s_proxy%vspace%get_ndf()
-  undf_any_space_2_s = s_proxy%vspace%get_undf()
-  !
-  ! Call kernels and communication routines
-  !
-  !$omp parallel default(shared), private(df)
-  !$omp do schedule(static)
-  DO df=1,v_proxy%vspace%get_last_dof_owned()
-    v_proxy%data(df) = 0.0_r_def
-  END DO 
-  !$omp end do
-  !
-  ! Set halos dirty/clean for fields modified in the above loop
-  !
-  !$omp master
-  CALL v_proxy%set_dirty()
-  !$omp end master
-  !
-  !$omp end parallel
-  CALL v_proxy%halo_exchange(depth=1)
-  !
-  IF (s_proxy%is_dirty(depth=1)) THEN
-    CALL s_proxy%halo_exchange(depth=1)
-  END IF 
-  !
-  !
   ! Look-up colour map
-  !
   CALL v_proxy%vspace%get_colours(ncolour, ncp_colour, cmap)
-  !
   DO colour=1,ncolour
     !$omp parallel default(shared), private(cell)
     !$omp do schedule(static)
     DO cell=1,ncp_colour(colour)
-      !
       CALL matrix_vector_code( cmap(colour, cell), nlayers, &
         v_proxy%data, s_proxy%data, mm_proxy%ncell_3d, & 
         mm_proxy%local_stencil, ndf_any_space_1_v, &
@@ -1001,11 +920,7 @@ fragment of the generated PSy layer},label={lst:PSy_omp}]
     !$omp end do
     !$omp end parallel
   END DO 
-  !
-  ! Set halos dirty/clean for fields modified in the above loop
-  !
   CALL v_proxy%set_dirty()
-  !
   CALL v_proxy%halo_exchange(depth=1)
 \end{lstlisting}
 
@@ -1175,7 +1090,7 @@ Scaling, MPI and OpenMP etc.
 \section{Conclusion}
 \label{sec:con}
 Conclusions, future work etc
-
+\newpage
 
 \bibliography{mibib.bib}
 
