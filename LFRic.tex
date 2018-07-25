@@ -479,10 +479,9 @@ a proportional font equally spaced.)}
 
 There are three kernels in this invoke. The first \verb+setval_c+ is
 an example of a {\em point-wise} kernel. The same operation, setting all
-all the values of the field to the same scalar, is applied
-to each DoF so no FEM structure is required.
-This is an example of a {\em built-in} operation generated in place in 
-the PSy layer by PSyclone. The second
+the values of the field to the same scalar, is applied to each dof so no 
+FEM structure is required. This is an example of a {\em built-in} operation 
+generated in place in the PSy layer by PSyclone. The second
 kernel is written as a constructor call to the kernel \textcolor{red}{(Comment: "Constructor of the kernel"?)}, so that it is
 valid Fortran. The arguments to this call \verb+v+ and \verb+s+ are
 {\em fields} and \verb+mm+ is an {\em operator}, in this case a mass
@@ -597,8 +596,7 @@ field object relates to the mesh is described by the function space.
 Most of the infrastructure is accessed through the field object. So, for
 example if a halo exchange is required on a field, the halo exchange
 method on the field object is called. This infrastructure
-API is used by the PSy layer to access
-information and functionality.
+API is used by the PSy layer to access information and functionality.
 
 \subsection{\label{sec:sub:distmem}Distributed Memory Optimisation}
 
@@ -683,7 +681,7 @@ cells is up to date with the owner of that data (`clean' halos) or
 whether a parallel computation has updated the field on the owning
 partition and the local halos are out of date (`dirty' halos). When the
 PSy layer determines that a halo exchange may be required, it first
-checks the state of the halos and if (and only if) they are `dirty' it calls the halo
+checks the state of the halos and if \textcolor{red}{(and only if)} they are `dirty' it calls the halo
 exchange functionality.
 
 \subsection{\label{sec:sub:sharedmem}Shared Memory Optimisation}
@@ -1094,11 +1092,14 @@ hierarchy. To allow the easy construction of the vertical-only
 operators in the Schur-complement from the finite element
 discretisation of the full equations, a suitable operator algebra was
 developed in~\cite{Mitchell2016} and tested in the Firedrake
-library. For horizontally discontinuous function spaces (such as the
+library. For horizontally discontinuous function spaces \textcolor{red}{(such as the
 pressure space, $Q_0^D$, and the vertical-only velocity, see
-Subsection~\ref{sec:sub:spatial} for more details), operators can be
+Subsection~\ref{sec:sub:spatial} for more details)}, operators can be
 assembled into a partially assembled matrix type, which stores all
-couplings within one vertical column. Matrices of this type can be
+couplings within one vertical column. 
+\textcolor{red}{(Comment: The vertical-only velocity space mentioned above is
+not defined in Subsection~\ref{sec:sub:spatial})}.
+Matrices of this type can be
 multiplied, added and, most importantly, inverted in the tridiagonal
 solvers which realises the vertical line relaxation. This allows the
 high-level construction of the building blocks required for the
@@ -1106,13 +1107,7 @@ Helmholtz-solver and preconditioner. The same data structures were
 implemented as derived Fortran 2003 types in the LFRic code and form
 the building blocks of the tensor-product multigrid preconditioner for
 the elliptic Helmholtz system.
-The velocity field $\mathbf{u}$ is placed in the $RT_0$ space; the vorticity 
-$\xi\equiv\nabla\times\mathbf{u}$ is placed in the $N_0$ space; density, $\rho$, 
-and Exner pressure, $\Pi$, are placed in the $Q_0^D$ space; as mentioned above 
-the potential temperature, $\theta$, is placed in a scalar-space corresponding 
-to the vertical components of $RT_0$ with dofs located in the
-centre of the top and bottom faces of a cell. See~\cite{melvin2018} for a full
-description of the discretisation used in the GungHo model.
+
 
 Compared to simpler preconditioners, which do not combine vertical
 line relaxation with a horizontal multigrid hierarchy, the
