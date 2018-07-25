@@ -1,4 +1,4 @@
-\documentclass[times]{elsarticle}
+\documentclass[review,times]{elsarticle}
 \bibliographystyle{elsarticle-num}
 \usepackage{graphicx,colordvi}
 \usepackage{bm}
@@ -36,8 +36,6 @@
 \author[met]{R.~Wong}
 
 
-
-
 \address[met]{Met Office, FitzRoy Road, Exeter, EX1 3PB}
 \address[hartree]{Hartree Centre, STFC Daresbury, Grim up North}
 \address[read]{Department of Computer Science, Polly Vacher Building,
@@ -54,6 +52,8 @@
 
 \end{frontmatter}
 
+
+\newpage
 \section{\label{sec:intro}Introduction}
 
 In common with many science applications, Exascale computing presents
@@ -112,6 +112,7 @@ preconditioners are presented in Section~\ref{sec:Solver}.
 Finally a scaling analysis is presented in Section~\ref{sec:scal} and 
 conclusions drawn in Section~\ref{sec:con}.
 
+
 \section{\label{sec:GH}GungHo}
 
 The dynamical core in an atmospheric model is responsible for
@@ -123,7 +124,7 @@ diabatic sources (such as longwave and shortwave radiative
 heating/cooling). For the purposes of this paper we only consider
 the dry dynamical core without the subgrid processes.
 
-The GungHo dynamical core was developed to replace the current ENDGame
+The GungHo dynamical core has been developed to replace the current ENDGame
 dynamical core in the UM. The GungHo model seeks to replicate the
 accuracy and stability of ENDGame whilst replacing the regular lat-lon
 grid with a quasi-uniform grid and so avoid the problems associated
@@ -131,7 +132,7 @@ with the polar singularities in ENDGame, resulting from the
 convergence of meridians at the poles. The mesh used in GungHo is an
 equi-angular cubed-sphere, shown in Figure~\ref{fig:cubed-sphere}.
 This has the benefit of near uniform resolution across the globe and a
-maximum/minimum edge length ratio of $1.3$ achieved by using only
+maximum/minimum edge length \textcolor{red}{ratio} of $\approx 1.3$ achieved by using only
 quadrilateral cells.  However, this quasi-uniform mesh comes at the
 expense of losing orthogonality (the line between two neighbouring
 cells centers is not, in general, perpendicular to the edge shared
@@ -190,7 +191,7 @@ the system is closed by the equation of state
 \end{equation}
 %
 These constitute a set of coupled non-linear Partial Differential
-Equationss (PDEs) for the vector wind $\mathbf{u}$, 
+Equations (PDEs) for the vector wind $\mathbf{u}$, 
 the density $\rho$, potential temperature $\theta$ and Exner pressure $\Pi$. 
 Additionally: $\bm{\Omega}$ is the rotation rate; $\Phi$ is the geopotential; 
 $p_0$ is a reference pressure; $R$ is the gas constant; $c_p$ is the specific 
@@ -229,7 +230,7 @@ for these spaces are shown in Figure~\ref{fig:fem-spaces}.
 (a) $Q_{1}$, (b) $N_0$, (c) $RT_0$ and (d) $Q_0^D$ finite element spaces.
 Circles correspond to scalar degrees of freedom and triangles to vector degrees
 of freedom.
-\textcolor{red}{(Comment: Arrow head seems smaller than the others. Particularly confusing when it is the front.})
+\textcolor{red}{(Comment: Dofs on lower two diagrams are not really visible.)}
 }
 \end{figure}
 %
@@ -240,8 +241,8 @@ the potential temperature, $\theta$, is placed in a scalar-space corresponding
 to the vertical components of $RT_0$ with dofs located in the
 centre of the top and bottom faces of a cell. See~\cite{melvin2018} for a full
 description of the discretisation used in the GungHo model.
-\texcolor{red}{(Comment: vertical-only velocity space is mentioned in Section~\ref{sec:sub:preconditioner}
-however it is not defined here)}.
+\textcolor{red}{(Comment: vertical-only velocity space is mentioned in 
+Subsection~\ref{sec:sub:preconditioner}, however it is not defined here)}.
 
 \subsection{Advection\label{sec:sub:advection}}
 In order to achieve accuracy similar to that of ENDGame it is important to have 
@@ -262,8 +263,8 @@ term. This only requires a local computation and the stencil is fixed, reducing 
 amount of computation needed. However, in order to obtain a stable scheme it is 
 wrapped in a multi-stage evaluation, meaning that the advection update needs to be 
 computed a number of times per Picard iteration (see Section~\ref{sec:sub:timestepping}), 
-nominally 3 stages are used. \textcolor{red}{\em (Comment: Explain/give reference to what is Picard iteration?)}
-Future work will evaluate the use of flux-form Semi-Lagrangian scheme (COSMIC) ~\cite{Leonard1996} 
+nominally 3 stages are used. \textcolor{red}{(Comment: Explain/give reference to what is Picard iteration?)}
+Future work will evaluate the use of flux-form Semi-Lagrangian scheme (COSMIC)~\cite{Leonard1996} 
 to replace the current scheme. This carries many of the 
 benefits of the semi-Lagrangian scheme used in ENDGame but without the 
 communication costs (due to use of a quasi-uniform mesh) as well a simplification 
@@ -298,11 +299,12 @@ An overview of the time-step is given in Table~\ref{tab:timestep}.
 \hspace{0.5cm}Compute $R\left(\mathbf{x}^n\right)$\tabularnewline
 \hspace{0.5cm}\textbf{do} $k=1,K$ (begin Picard loop)\tabularnewline
 \hspace{1.0cm}Compute advective terms $R^A\left(\mathbf{x}^{(k)},\mathbf{x}^{(n)}\right)$\tabularnewline
-\hspace{1.0cm}Compute $R\left(\mathbf{x}^(k)\right)$\tabularnewline
+\hspace{1.0cm}Compute $R\left(\mathbf{x}^{(k)}\right)$\tabularnewline
 \hspace{1.0cm}Set $\mathcal{R}^{(k)} = R^n + R^{(k)} + R^A$\tabularnewline
 
 \hspace{1.0cm}Solve $\mathcal{L}\left(\mathbf{x}^n\right)\mathbf{x}' = \mathcal{R}^{(k)}$\tabularnewline
 \hspace{0.5cm}\textbf{end do}\tabularnewline
+\hspace{0.5cm}Set $\mathbf{x}^{n+1} = \mathbf{x}^{(K)}$\tabularnewline
 \textbf{end do}\tabularnewline
 \hline
 \end{tabular}
@@ -481,7 +483,7 @@ all the values of the field to the same scalar, is applied
 to each DoF so no FEM structure is required.
 This is an example of a {\em built-in} operation generated in place in 
 the PSy layer by PSyclone. The second
-kernel is written as a constructor call to the kernel (\textcolor{red}{(Comment: "Constructor of the kernel"?)}, so that it is
+kernel is written as a constructor call to the kernel \textcolor{red}{(Comment: "Constructor of the kernel"?)}, so that it is
 valid Fortran. The arguments to this call \verb+v+ and \verb+s+ are
 {\em fields} and \verb+mm+ is an {\em operator}, in this case a mass
 matrix.
@@ -496,47 +498,15 @@ generated Algorithm layer code},label={lst:invoke_56}]
 
 Shown in listing~\ref{lst:PSy1} is a code fragment from the generated PSy layer for
 the invoke shown in listing~\ref{lst:invoke}.
-\textcolor{red}{(Comment: This listing is broken over two pages. 
-Is there a command to enforce keeping it together?)}
+\textcolor{red}{(Comment: The code listings can become broken over two pages. 
+Is there a command to enforce keeping them together?)}
 \begin{lstlisting}[language=Fortran, numbers=left,caption={Code 
 fragment of the generated PSy layer},label={lst:PSy1}]
- nlayers = v_proxy%vspace%get_nlayers()
- !
- ! Create a mesh object
- !
- mesh => v%get_mesh()
- !
- ! Look-up dofmaps for each function space
- !
- map_any_space_1_v => v_proxy%vspace%get_whole_dofmap()
- map_any_space_2_s => s_proxy%vspace%get_whole_dofmap()
- !
- ! Initialise number of DoFs for any_space_1_v
- !
- ndf_any_space_1_v = v_proxy%vspace%get_ndf()
- undf_any_space_1_v = v_proxy%vspace%get_undf()
- !
- ! Initialise number of DoFs for any_space_2_s
- !
- ndf_any_space_2_s = s_proxy%vspace%get_ndf()
- undf_any_space_2_s = s_proxy%vspace%get_undf()
- !
- ! Call kernels and communication routines
- !
- DO df=1,v_proxy%vspace%get_last_dof_owned()
-   v_proxy%data(df) = 0.0_r_def
- END DO 
- !
- ! Set halos dirty/clean for fields modified in the above loop
- !
  CALL v_proxy%set_dirty()
- !
  CALL v_proxy%halo_exchange(depth=1)
- !
  IF (s_proxy%is_dirty(depth=1)) THEN
    CALL s_proxy%halo_exchange(depth=1)
  END IF 
- !
  DO cell=1,mesh%get_last_halo_cell(1)
    CALL matrix_vector_code(cell, nlayers, v_proxy%data, &
       s_proxy%data, mm_proxy%ncell_3d, mm_proxy%local_stencil, &
@@ -545,11 +515,7 @@ fragment of the generated PSy layer},label={lst:PSy1}]
       ndf_any_space_2_s, undf_any_space_2_s, &
       map_any_space_2_s(:,cell))
   END DO 
-  !
-  ! Set halos dirty/clean for fields modified in the above loop
-  !
   CALL v_proxy%set_dirty()
-  !
   CALL v_proxy%halo_exchange(depth=1)
 \end{lstlisting}
 Lines 1-20 are the calls to the LFRic infrastructure to extract
@@ -676,7 +642,7 @@ ownership of that data, and therefore, halo swapping more complex.
 The halo exchanges are achieved by passing information between processes
 using MPI. For performance and ease of use reasons, the MPI library is
 not called directly, instead a wrapper is used. 
-\textcolor{red}{(Comment: Is "wrapper" the correct term to use. It maybe 
+\textcolor{red}{(Comment: Is "wrapper" the correct term to use? It maybe 
 does enough to be considered a communication library in its own right.)}
 At initialisation time,
 the wrapper library pre-generates the communication routing tables
@@ -708,7 +674,7 @@ intermediate layer. A switch was made to use the YAXT (Yet Another
 eXchange Tool)~\cite{YAXTDocs} library. This provides
 halo exchanges during time stepping that are as fast as those provided
 by ESMF, but the time taken to initialise the routing tables is much
-shorter. \textcolor{red}{\em (Comment: Reference to support this conclusion?)}
+shorter. \textcolor{red}{(Comment: Reference to support this conclusion?)}
 
 The API for supporting distributed memory optimisation is very simple. A
 halo exchange function is provided on every field and a flag is
@@ -796,7 +762,7 @@ file format are defined by an XML file which hides a lot of complexity from the 
 Prior to 2016, XIOS only supported read and write of NetCDF file formats that follow the CF
 conventions.  As previously explained in Section~\ref{sec:GH}, the LFRic implementation uses
 semi-structured meshes and a FEM formulation, where variables are held on
-different elements of the mesh (nodes, edges or faces) \textcolor{red}{\em (Comment: What about vertices?)}.
+different elements of the mesh (nodes, edges or faces) \textcolor{red}{(Comment: What about vertices?)}.
 Therefore, the I/O system needs to
 handle data structured in this way. The UGRID-NetCDF format has been chosen as the main
 LFRic input mesh format and also output format for diagnostics and model dumps~\cite{UgridSpec}.
@@ -940,101 +906,57 @@ Although PSyclone transformations may be applied within a Python
 interactive session, they will typically be used during the
 compilation phase of a potentially large application. Therefore,
 PSyclone allows (Python) transformation scripts to be supplied
-on the command line. As an example, shown below in
-listing~\ref{lst:omp.py} is a Python script which is sufficient
-to add OpenMP parallelism to the whole LFRic code base.
+on the command line. For example, to add OpenMP to the PSy layer,
+two transformations need to be applied. The colouring transformation
+(in the case of fields on horizontally continous spaces) is to all
+loops in the schedule, then all loops, except the loop over colours,
+have the openMP transformations applied. This script has 17 lines of
+executable python and is all that is required to apply OpenMP to the
+whole model. 
 
-\begin{lstlisting}[language=python,caption={Python script for applying
-transformations to a PSyclone schedule.},label={lst:omp.py}]
-def trans(psy):
-    ''' Applies PSyclone colouring & OpenMP transformations. '''
-    ctrans = Dynamo0p3ColourTrans()
-    otrans = Dynamo0p3OMPLoopTrans()
-    oregtrans = OMPParallelTrans()
-
-    # Loop over all of the invokes in the PSy object
-    for invoke in psy.invokes.invoke_list:
-
-        schedule = invoke.schedule
-
-        # Colour loops over cells unless they are on discontinuous
-        # spaces (W3, WTHETA and W2V) or over dofs
-        for loop in schedule.loops():
-            if loop.iteration_space == "cells" \
-                and loop.field_space.orig_name \
-                    not in DISCONTINUOUS_FUNCTION_SPACES:
-                schedule, _ = ctrans.apply(loop)
-
-        # Add OpenMP to loops unless they are over colours
-        for loop in schedule.loops():
-            if loop.loop_type != "colours":
-                schedule, _ = oregtrans.apply(loop)
-                schedule, _ = otrans.apply(loop, reprod=True)
-    return psy
-\end{lstlisting}
-Here, the `psy' object contains PSyclone's internal represenation of
-the PSy layer that it will generate. The script takes this, modifies
-it using transformations and then returns it.
+%\begin{lstlisting}[language=python,caption={Python script for applying
+%transformations to a PSyclone schedule.},label={lst:omp.py}]
+%def trans(psy):
+%    ''' Applies PSyclone colouring & OpenMP transformations. '''
+%    ctrans = Dynamo0p3ColourTrans()
+%    otrans = Dynamo0p3OMPLoopTrans()
+%    oregtrans = OMPParallelTrans()
+%
+%    # Loop over all of the invokes in the PSy object
+%    for invoke in psy.invokes.invoke_list:
+%
+%        schedule = invoke.schedule
+%
+%        # Colour loops over cells unless they are on discontinuous
+%        # spaces (W3, WTHETA and W2V) or over dofs
+%        for loop in schedule.loops():
+%            if loop.iteration_space == "cells" \
+%                and loop.field_space.orig_name \
+%                    not in DISCONTINUOUS_FUNCTION_SPACES:
+%                schedule, _ = ctrans.apply(loop)
+%
+%        # Add OpenMP to loops unless they are over colours
+%        for loop in schedule.loops():
+%            if loop.loop_type != "colours":
+%                schedule, _ = oregtrans.apply(loop)
+%                schedule, _ = otrans.apply(loop, reprod=True)
+%    return psy
+%\end{lstlisting}
+%Here, the `psy' object contains PSyclone's internal represenation of
+%the PSy layer that it will generate. The script takes this, modifies
+%it using transformations and then returns it.
 
 Applying the OpenMP script to the invoke call described in
 Section~\ref{sec:SoC} results in the following generated PSy layer
 code shown in listing~\ref{lst:PSy_omp}. 
-
 \begin{lstlisting}[language=Fortran, numbers=left,caption={Code 
 fragment of the generated PSy layer},label={lst:PSy_omp}]
-  nlayers = v_proxy%vspace%get_nlayers()
-  !
-  ! Create a mesh object
-  !
-  mesh => v%get_mesh()
-  !
-  ! Look-up dofmaps for each function space
-  !
-  map_any_space_1_v => v_proxy%vspace%get_whole_dofmap()
-  map_any_space_2_s => s_proxy%vspace%get_whole_dofmap()
-  !
-  ! Initialise number of DoFs for any_space_1_v
-  !
-  ndf_any_space_1_v = v_proxy%vspace%get_ndf()
-  undf_any_space_1_v = v_proxy%vspace%get_undf()
-  !
-  ! Initialise number of DoFs for any_space_2_s
-  !
-  ndf_any_space_2_s = s_proxy%vspace%get_ndf()
-  undf_any_space_2_s = s_proxy%vspace%get_undf()
-  !
-  ! Call kernels and communication routines
-  !
-  !$omp parallel default(shared), private(df)
-  !$omp do schedule(static)
-  DO df=1,v_proxy%vspace%get_last_dof_owned()
-    v_proxy%data(df) = 0.0_r_def
-  END DO 
-  !$omp end do
-  !
-  ! Set halos dirty/clean for fields modified in the above loop
-  !
-  !$omp master
-  CALL v_proxy%set_dirty()
-  !$omp end master
-  !
-  !$omp end parallel
-  CALL v_proxy%halo_exchange(depth=1)
-  !
-  IF (s_proxy%is_dirty(depth=1)) THEN
-    CALL s_proxy%halo_exchange(depth=1)
-  END IF 
-  !
-  !
   ! Look-up colour map
-  !
   CALL v_proxy%vspace%get_colours(ncolour, ncp_colour, cmap)
-  !
   DO colour=1,ncolour
     !$omp parallel default(shared), private(cell)
     !$omp do schedule(static)
     DO cell=1,ncp_colour(colour)
-      !
       CALL matrix_vector_code( cmap(colour, cell), nlayers, &
         v_proxy%data, s_proxy%data, mm_proxy%ncell_3d, & 
         mm_proxy%local_stencil, ndf_any_space_1_v, &
@@ -1046,11 +968,7 @@ fragment of the generated PSy layer},label={lst:PSy_omp}]
     !$omp end do
     !$omp end parallel
   END DO 
-  !
-  ! Set halos dirty/clean for fields modified in the above loop
-  !
   CALL v_proxy%set_dirty()
-  !
   CALL v_proxy%halo_exchange(depth=1)
 \end{lstlisting}
 
@@ -1087,12 +1005,12 @@ this results in a rather complex solver.
 To allow easy implementation of sophisticated nested iterative solvers
 and preconditioners, a dedicated abstraction was developed by using
 advanced object oriented features of Fortran 2003. 
-\textcolor{red}{(Comment: Advanced for F2003 or advenced regarding to older Fortran?)} This approach
+\textcolor{red}{(Comment: Advanced for F2003 or advanced regarding to older Fortran?)} This approach
 follows similar design philosophies in widely used linear algebra
 libraries such as PETSc~\cite{Balay1997,Balay2018} and DUNE-ISTL~\cite{Blatt2007}. 
 More specifically, the implementation in LFRic uses
 derived types which realise the following operations (see
-Fig.~\ref{fig:class_hierarchy}, left):
+Fig.~\ref{fig:class_hierarchy}, left): \textcolor{red}{(Comment: Are these plots actual UML diagrams?)}
 \begin{itemize}
 \item \textbf{Vector} types which support common linear algebra
   operations such as AXPY $y\mapsto y+\alpha x$ and dot products
@@ -1117,7 +1035,6 @@ Fig.~\ref{fig:class_hierarchy}, left):
     \label{fig:class_hierarchy}
   \end{center}
 \end{figure}
-\textcolor{red}{(Comment: Are these actual UML diagrams?)}
 Each of those types is derived from an abstract base type. The
 iterative solver types operate on generic vector types and are passed
 preconditioner and linear operator objects which adhere to the
@@ -1163,7 +1080,7 @@ potentially leads to significant improvements in performance.
 
 To precondition the strongly anisotropic Helmholtz-operator for the
 pressure system, the tensor-product multigrid approach in~\cite{Borm2001} 
-is used in LFRic \textcolor{red}{(Comment: Technically, it is not yet used. Is intended perhaps.)}. 
+is used in LFRic. \textcolor{red}{(Comment: Technically, it is not yet used. Is intended perhaps.)} 
 This is a more advanced solver than
 the current tridiagonal vertical-only preconditioner in the ENDGame
 model. The multigrid algorithm currently being developed in LFRic has been tested
@@ -1237,7 +1154,7 @@ Scaling, MPI and OpenMP etc.
 \section{Conclusion}
 \label{sec:con}
 Conclusions, future work etc
-
+\newpage
 
 \bibliography{mibib.bib}
 
