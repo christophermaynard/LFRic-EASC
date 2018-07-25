@@ -88,7 +88,7 @@ operations on global fields are performed. The bottom layer is the kernel layer
 where these operations are expressed on a single column of data. In between is the
 Parallelisation System or PSy layer, where the horizontal looping and parallelism is
 expressed. This abstraction, termed PSyKAl, is written in Fortran with Fortran 2003
-Object Orientation to encode the rules of the API. \textcolor{red}{(Comment: Define what API means?)}
+Object Orientation to encode the rules of the API. \textcolor{red}{\em (Comment: Define what API means?)}
 Moreover, a Python code called PSyclone can parse the algorithm and kernel layers and
 generate the PSy layer with different target programming models. In effect, the PSyKAl API
 and PSyclone are a Domain Specific Embedded Language (DSEL). Natural science code which
@@ -151,7 +151,7 @@ direction to form a spherical shell of cells. Where orography is present a terra
 following radial coordinate is used such that every column contains the
 same number of cells. The horizontal mesh is treated as unstructured,
 such that it could easily be changed, for example to one of those considered 
-in \cite{staniforth2012} such as to an icosahedral mesh.
+in~\cite{staniforth2012} such as to an icosahedral mesh.
 The vertical \textcolor{red}{mesh} is structured and directly addressed, so that
 a data point is addressed as \textit{map(df,col)+k}, where \textit{col}
 is the horizontal index of the column and \textit{k=0,...,nlayers-1} is
@@ -160,7 +160,7 @@ data point within the cell, allowing multiple data points within a single cell, 
 finally \textit{map} is an array containing the address of data points at 
 the bottom of the model column.
 Using an extruded mesh of this type with direct access in the vertical, the cost
-of the indirectly addressed horizontal index can be hidden (see \cite{gmd-9-3803-2016})
+of the indirectly addressed horizontal index can be hidden (see~\cite{gmd-9-3803-2016})
 provided enough layers are used. Since the current UM uses O(100) layers the 
 cost of the indirection is minimal.
 %
@@ -191,22 +191,22 @@ heat at constant pressure and $\kappa\equiv R/c_p$.
 \subsection{Spatial Discretisation\label{sec:sub:spatial}}
 In order to maintain a similar
 accuracy to ENDGame on a quasi-uniform mesh a mixed Finite Element Method is 
-used \citep{cotter2012, natale2016}. This gives the finite element equivalent 
+used~\citep{cotter2012, natale2016}. This gives the finite element equivalent 
 of the C-grid-Charney-Phillips staggering used in ENDGame, but without relying
 on the orthogonality of the mesh for numerical consistency. The mixed FEM
 is very general in terms of the order of approximation and shape of the 
 underlying mesh, allowing the method to be tailored to specific needs of the 
 application. The mixed FEM involves defining a number of finite 
 element spaces and differential mappings between them. The particular family of 
-finite element spaces \citep{boffi2013}, for a given polynomial order $p$, used 
+finite element spaces~\citep{boffi2013}, for a given polynomial order $p$, used 
 in GungHo are: $Q_{p+1}$ containing continuous 
 point wise scalar quantities; $N_p$ containing circulation vectors that have
 continuous tangential components; $RT_p$ containing flux vectors that have 
 continuous normal components; $Q_p^D$ containing discontinuous volume 
 integrated scalars; along with a horizontally discontinuous vertically continuous 
-space \citep{natale2016} for $\theta$ to mimic the Charney-Phillips grid staggering 
+space~\citep{natale2016} for $\theta$ to mimic the Charney-Phillips grid staggering 
 used in ENDGame.  In practice the lowest order spaces $p=0$ are used, the resulting
-location of the degrees of freedom (hereafter dofs) for these spaces are shown in
+location of the ``degrees of freedom'' (hereafter dofs) for these spaces are shown in
 figure \ref{fig:fem-spaces}. 
 %
 \begin{figure}
@@ -225,9 +225,11 @@ The velocity field $\mathbf{u}$ is placed in the $RT_0$ space; the vorticity
 $\xi\equiv\nabla\times\mathbf{u}$ is placed in the $N_0$ space; density, $\rho$, 
 and Exner pressure, $\Pi$, are placed in the $Q_0^D$ space; as mentioned above 
 the potential temperature, $\theta$, is placed in a scalar-space corresponding 
-to the vertical components of $RT_0$ with degrees of freedom located in the
-centre of the top and bottom faces of a cell. See \cite{melvin2018} for a full
+to the vertical components of $RT_0$ with dofs located in the
+centre of the top and bottom faces of a cell. See~\cite{melvin2018} for a full
 description of the discretisation used in the GungHo model.
+\texcolor{red}{(Comment: vertical-only velocity space is mentioned in Section~\ref{sec:sub:preconditioner}
+however it is not defined here)}.
 
 \subsection{Advection\label{sec:sub:advection}}
 In order to achieve accuracy similar to that of ENDGame it is important to have 
@@ -247,10 +249,10 @@ neighbouring cells and evaluates this at a fixed point to compute the advective
 term. This only requires a local computation and the stencil is fixed, reducing the 
 amount of computation needed. However, in order to obtain a stable scheme it is 
 wrapped in a multi-stage evaluation, meaning that the advection update needs to be 
-computed a number of times per Picard iteration \textcolor{red}{(Comment: Explain/give reference to what is Picard iteration?)},
-nominally 3 stages are used. 
-Future work is evaluating the use of flux-form Semi-Lagrangian scheme (COSMIC) 
-\cite{Leonard1996} to replace the current scheme. This carries many of the 
+computed a number of times per Picard iteration, nominally 3 stages are used.
+\textcolor{red}{\em (Comment: Explain/give reference to what is Picard iteration?)}
+Future work is evaluating the use of flux-form Semi-Lagrangian scheme (COSMIC) ~\cite{Leonard1996} 
+to replace the current scheme. This carries many of the 
 benefits of the semi-Lagrangian scheme used in ENDGame but without the 
 communication costs (due to use of a quasi-uniform mesh) as well a simplification 
 to the computation from using a dimensionally split formulation that only requires 
@@ -268,7 +270,7 @@ use of a quasi-Newton method,
 \end{equation}
 %
 for the increment $\mathbf{x}'\equiv\mathbf{x}^{(k+1)}-\mathbf{x}^{(k)}$ on the $k^{\rm{th}}$ 
-estimate from the Picard iteration of the prognostic variables $\mathbf{x}\equiv\left(\mathbf{u},\,\theta,\,\rho,\,\Pi\right)$. The linear system $\mathcal{L}\left(\mathbf{x}^n\right)$ is chosen as to contain the terms necessary for stability of the fast acoustic and gravity waves as in \cite{}{QJ:QJ2235} \textcolor{red}{(Comment: Broken reference)} and is formed from a linearisation about the previous timestep fields $\mathbf{x}^n$. The method used to solve this linear system is detailed in Section \ref{sec:Solver}. An overview of the 
+estimate from the Picard iteration of the prognostic variables $\mathbf{x}\equiv\left(\mathbf{u},\,\theta,\,\rho,\,\Pi\right)$. The linear system $\mathcal{L}\left(\mathbf{x}^n\right)$ is chosen as to contain the terms necessary for stability of the fast acoustic and gravity waves as in~\cite{}{QJ:QJ2235} \textcolor{red}{(Comment: Broken reference)} and is formed from a linearisation about the previous timestep fields $\mathbf{x}^n$. The method used to solve this linear system is detailed in Section~\ref{sec:Solver}. An overview of the 
 time-step is given in Table \ref{tab:timestep}.
 %
 \begin{table}
@@ -401,9 +403,9 @@ standard, high level language. In the case of the LFRic model, data
 access descriptors are employed to say whether access to a field is
 {\em read}, {\em write}, {\em readwrite} or {\em increment}. The latter 
 two discriminate between fields that do not share degrees 
-of freedom (hereafter DoF) between columns (e.g. density defined on 
+of freedom between columns ({\em e.g.} density defined on 
 $Q_p^D$ function space, see Subsection~\ref{sec:sub:spatial} for more details) 
-and the ones that do (e.g. velocity defined on $RT_0$ space, 
+and the ones that do ({\em e.g.} velocity defined on $RT_0$ space, 
 Subsection~\ref{sec:sub:spatial}). This information is embedded in
 Fortran as part of the kernel. Other information encoded in this way
 is the loop iterator (for example {\em cells}), whether the kernel
@@ -633,7 +635,7 @@ table, which is slower than using direct addressing. In order to recover
 some code performance, fields are laid out in memory so that vertically
 adjacent data points are next to each other, which means that, for
 optimisation reasons, the looping structure within LFRic is \em{k}-innermost
-\textcolor{red}{(Comment: Perhaps explain that k refers to vertical?)};
+\textcolor{red}{\em (Comment: Perhaps explain that k refers to vertical?)};
 
 \item LFRic supports a finite-element formulation which means that data
 are held as ``degrees of freedom'' (dofs) on all the different
@@ -665,7 +667,7 @@ levels of halo depth
 
 Initially, the LFRic project used the infrastructure library component
 of the Earth System Modelling Framework (ESMF)~\cite{ESMFDocs} to
-provide the layer between the model and MPI, but it wasn't particularly
+provide the layer between the model and MPI, however it was not particularly
 well suited to the particular problem it was being used for. Although
 routing tables it generated were optimal (the halo exchanges called
 during timestepping were very fast), the time to generate the tables
@@ -673,11 +675,11 @@ became quite long when the model was run at scale. The design of the
 model framework to support the `separation of concerns' led to all the
 halo exchange functionality being neatly encapsulated in the PSy layer.
 This made it relatively easy to try a different library to provide the
-intermadiate layer. A switch was made to use the YAXT (Yet Another
+intermediate layer. A switch was made to use the YAXT (Yet Another
 eXchange Tool)~\cite{YAXTDocs} library written by DKRZ. This provides
 halo exchanges during time stepping that are as fast as those provided
-by ESMF, but the time taken to initialise the routing tables is must
-shorter. 
+by ESMF, but the time taken to initialise the routing tables is much
+shorter. \textcolor{red}{\em (Comment: Reference to support this conclusion?)} 
 
 The API for supporting distributed memory optimisation is very simple. A
 halo exchange function is provided on every field and a flag is
@@ -694,7 +696,7 @@ exchange functionality.
 As with all the parallelisation within LFRic, the shared memory
 parallelism is implemented within the PSy layer. The directives used to
 implement the shared memory parallelism are inserted into the PSy layer
-code. The finite-element formulation makes use of data on mesh entities
+code. The finite element formulation makes use of data on mesh entities
 shared by more than one cell. That means that two threads working on
 different cells may try writing to a dof shared between the cells at the
 same time. In order to prevent these write contentions, the mesh is
@@ -703,11 +705,11 @@ contentions within a collection, so calculations on the cells within a
 collections can be run in parallel. Each of these parallel collections
 are then run sequentially and there are no write contentions. The
 collections are often named after different colours, so the process is
-known a mesh colouring. The information and functionality to support
+known as {\em mesh colouring}. The information and functionality to support
 colouring within the shared memory parallelism is provided by the LFRic
 infrastructure.
 
-When the mesh object is created, it is is coloured by the infrastructure
+When the mesh object is created, it is coloured by the infrastructure
 and information about the colouring is stored, so it can be used from
 within the PSy layer. Infrastructure provides the number of colours,
 the number of cells in each colour and which cells are present in each
@@ -726,9 +728,9 @@ to be able to run science assessment jobs on large numbers of cores and obtain t
 output efficiently. Secondly, a key aim of LFRic is scalability and therefore it is
 helpful to be able to monitor the impact of I/O on this as the infrastructure and
 science develops. Thirdly, LFRic is making some fundamental changes that impact the
-underlying mesh and this links to I/O in terms of input / output file formats. Having
+underlying mesh and this links to I/O in terms of input/output file formats. Having
 a concrete idea of what these file formats will be in the future enables LFRic to
-inform future users internal and external to the Met Office.
+inform future users, internal and external to the Met Office.
 
 Although developing a bespoke I/O system was a possibility, the decision was
 made early on to adopt an existing parallel I/O framework and leverage knowledge and
@@ -741,9 +743,9 @@ candidate for evaluation~\cite{XIOSWiki}. A discussion of the other frameworks a
 they were not considered can be found in~\cite{Adams2018}.
 
 XIOS was an obvious choice for LFRic as it was a mature framework, having had many years
-of development and was already in use in the weather and climate domain. For example,
+of development and was already in use in the weather and climate domain; for example,
 the Orchidee land surface model, the Dynamico dynamical core (part of the LMD-Z
-Atmosphere model) and in the NEMO ocean model. NEMO is used in Met Office coupled
+Atmosphere model) and the NEMO ocean model. NEMO is used in Met Office coupled
 models so there was some existing experience with XIOS. In terms of potential scalability,
 XIOS had also been proved to run successfully in models running on the order of 10,000
 cores. Crucially for climate models, XIOS works with the OASIS coupling framework that
@@ -751,22 +753,23 @@ is commonly used in coupled climate models including the UM.
 
 The key features of XIOS can be summarised as follows:
 \begin{enumerate}
-  \item Flexible definition of I/O workflows via external XML files
-  \item Client/Server architecture allowing asynchronous I/O servers on dedicated cores
-  \item Sophisticated "in situ" post-processing via workflows defined in the XML file(s) 
+  \item Flexible definition of I/O workflows via external XML files;
+  \item Client/Server architecture allowing asynchronous I/O servers on dedicated cores;
+  \item Sophisticated "in situ" post-processing via workflows defined in the XML file(s). 
 \end{enumerate}
 
 XIOS is written in C++, but also provides a Fortran API to developers. It makes use of
 MPI-IO and the NetCDF4 and HDF5 libraries and handles unstructured and regular grids.
 XIOS is a client-server framework where I/O servers are asynchronous processes buffering
 output requests from client processes. XIOS also has sophisticated post-processing
-functionality - e.g. for regridding, time series, meaning. The output schedule and
+functionality - {\em e.g.} for regridding, time series, meaning. The output schedule and
 file format are defined by an XML file which hides a lot of complexity from the user.
 
 Prior to 2016, XIOS only supported read and write of NetCDF file formats that follow the CF
-conventions.  As previously explained in section~\ref{sec:GH}, the LFRic implementation uses
+conventions.  As previously explained in Section~\ref{sec:GH}, the LFRic implementation uses
 semi-structured meshes and a FEM formulation, where variables are held on
-different elements of the mesh (nodes, edges or faces). Therefore, the I/O system needs to
+different elements of the mesh (nodes, edges or faces) \textcolor{red}{\em (Comment: What about vertices?)}.
+Therefore, the I/O system needs to
 handle data structured in this way. The UGRID-NetCDF format has been chosen as the main
 LFRic input mesh format and also output format for diagnostics and model dumps~\cite{UgridSpec}.
 In the UGRID convention the topology of the underlying unstructured mesh is stored as well as
@@ -778,7 +781,7 @@ XIOS has been integrated into LFRic via a lightweight I/O interface so
 that (as far as possible) the underlying I/O framework is hidden and
 could be replaced by an alternative.  The I/O interface is designed to
 be compatible with the use of Fortran 2003 Object Orientation in
-LFRic. The field object (see figure~\ref{fig:objects}) contains read and write
+LFRic. The field object (see Figure~\ref{fig:objects}) contains read and write
 interface declarations that use Fortran procedure pointers to define
 I/O 'behaviours'. When a field is created the behaviours are set by
 pointing to a specific reading or writing method. Writing a field just
@@ -800,7 +803,7 @@ As discussed earlier, PSyclone~\cite{psyclone} is a domain-specific
 compiler which, given an Algorithm and associated Kernels, generates
 the code for the middle, PSy layer. Currently, each of these layers
 must be in Fortran and hence the compiler is embedded in
-Fortran. The choice of Fortran is motivated in section~\ref{sec:SoC}. However, there is
+Fortran. The choice of Fortran is motivated in Section~\ref{sec:SoC}. However, there is
 nothing in the approach to prevent other languages being targetted in
 future. PSyclone itself is written in Python.
 
@@ -834,25 +837,26 @@ Fortran code.  The steps involved in generating a vanilla
 (un-optimised) PSy layer subroutine are as follows:
 \begin{enumerate}
 \item Generate the unique list of arguments required by all kernels
-  in the invoke
+  in the invoke;
 \item Generate Fortran which queries the LFRic infrastructure to get
   information on the sizes of the various iteration spaces (number of cells,
-  vertical levels, dofs {\em etc.})
+  vertical levels, dofs {\em etc.});
 \item Generate Fortran which queries the LFRic infrastructure to get the
   various look-up tables ({\em e.g.} for identifying the dofs belonging to a
-  given cell)
+  given cell);
 \item Generate Fortran which dereferences the various field and operator
-  objects to get the necessary data arrays
+  objects to get the necessary data arrays;
 \item For each kernel in the invoke
   \begin{enumerate}
-    \item Generate a loop over the correct iteration space (cells or dofs)
-    \item Generate a call to the kernel subroutine with all necessary arguments
+    \item Generate a loop over the correct iteration space (cells or dofs),
+    \item Generate a call to the kernel subroutine with all necessary arguments.
   \end{enumerate}
 \end{enumerate}
 
 Since the Algorithm deals with global objects
 (fields, operators {\em etc.})  and a kernel deals with {\em e.g.} individual
-columns of cells, the PSy layer must also account for the fact that
+columns of cells (see {\em e.g.} Section~\ref{sec:intro}), 
+the PSy layer must also account for the fact that
 the global objects are in fact decomposed over MPI processes by the
 LFRic infrastructure. PSyclone must therefore ensure that global sums
 are placed appropriately and that the halos of any fields read by a
@@ -891,10 +895,10 @@ know to be beneficial for a particular architecture and/or compiler.
 The application of optimisations is achieved by applying
 PSyclone-provided transformations to the schedule of an invoke.  For
 instance, in order to parallelise a given schedule using OpenMP,
-PSyclone provides transformations to create a parallel region and
+ PSyclone provides transformations to create a parallel region and
 introduce various forms of work-sharing construct. However,
 work-sharing of loops over cells for kernels which update quantities
-on horizontally-continuous function spaces will result in race
+on horizontally continuous function spaces will result in race
 conditions where multiple threads attempt to write to the same dof on
 a shared mesh entity. It
 is therefore necessary to control the iteration space in order to
@@ -906,7 +910,7 @@ interactive session, they will typically be used during the
 compilation phase of a potentially large application. Therefore,
 PSyclone allows (Python) transformation scripts to be supplied
 on the command line. As an example, shown below in
-listing~\ref{lst:omp.py} is a python script which is sufficient
+listing~\ref{lst:omp.py} is a Python script which is sufficient
 to add OpenMP parallelism to the whole LFRic code base.
 
 \begin{lstlisting}[language=python,caption={Python script for applying
@@ -1033,14 +1037,15 @@ need to be inverted with a small number of iterations of a Krylov
 subspace method. More importantly, the semi-implicit time-stepping
 approach requires the solution of a very large sparse system for all
 prognostic unknowns in each step of the non-linear Picard
-iteration. Since the system is ill-conditioned, it needs to be
+iteration (Subsection~\ref{sec:sub:timestepping}). 
+Since the system is ill-conditioned, it needs to be
 preconditioned efficiently. This is achieved by the (approximate)
 reduction to an elliptic system for the pressure, which is
-preconditioned with a tensor-product multigrid algorithm
-\cite{Borm2001} (see Section \ref{sec:preconditioner}). To increase
+preconditioned with a tensor-product multigrid algorithm~\cite{Borm2001} 
+(see Subsection~\ref{sec:sub:preconditioner}). To increase
 efficiency, the pressure preconditioner can be wrapped in its own
 iterative solver for the Helmholtz system. Note that in contrast to
-the approach already employed in the ENDGame model \cite{QJ:QJ2235},
+the approach already employed in the ENDGame model~\cite{QJ:QJ2235},
 an outer iteration over the full system is still required due to the
 non-diagonal nature of the finite element mass matrices. Altogether
 this results in a rather complex solver.
@@ -1049,19 +1054,19 @@ To allow easy implementation of sophisticated nested iterative solvers
 and preconditioners, a dedicated abstraction was developed by using
 advanced object oriented features of Fortran 2003. This approach
 follows similar design philosophies in widely used linear algebra
-libraries such as PETSc \cite{Balay1997,Balay2018} and DUNE-ISTL
-\cite{Blatt2007}. More specifically, the implementation in LFRic uses
+libraries such as PETSc~\cite{Balay1997,Balay2018} and DUNE-ISTL~\cite{Blatt2007}. 
+More specifically, the implementation in LFRic uses
 derived types which realise the following operations (see
-Fig. \ref{fig:class_hierarchy}, left):
+Fig.~\ref{fig:class_hierarchy}, left):
 \begin{itemize}
 \item \textbf{Vector} types which support common linear algebra
   operations such as AXPY $y\mapsto y+\alpha x$ and dot products
   $x,y\mapsto s = \langle x,y\rangle$. The most important vector-type
   is \texttt{field\_vector}, which contains a collection of model
-  fields.
-\item \textbf{Linear operator} types which implement the operation $x\mapsto y=Ax$ for vectors $x$ and $y$
+  fields;
+\item \textbf{Linear operator} types which implement the operation $x\mapsto y=Ax$ for vectors $x$ and $y$;
 \item \textbf{Preconditioners} which approximately solve the system $Px=b$ for a
-  given right hand side $b$ and some operator $P\approx A$
+  given right hand side $b$ and some operator $P\approx A$;
 \item \textbf{Iterative solvers} which solve the system $Ax=b$ with a
   Krylov-subspace method for a given right hand side $b$. Currently
   supported solvers include Conjugate Gradient, GMRES and BiCGStab.
@@ -1098,15 +1103,15 @@ implements the following objects (see Fig. \ref{fig:class_hierarchy},
 right):
 \begin{itemize}
 \item A linear operator type which applies the full linear system to
-  all components of a \texttt{field\_vector}.
+  all components of a \texttt{field\_vector};
 \item A preconditioner type which reduces the full linear system to
   the (approximate) Schur complement in pressure space by lumping the
   velocity mass matrix; this preconditioner then calls the solver for
-  the pressure (Helmholtz-) system.
+  the pressure (Helmholtz-) system;
 \item A linear operator type which applies the Helmholtz-operator for
-  the pressure system.
+  the pressure system;
 \item A preconditioner type which approximately inverts the Helmholtz
-  operator (see section \ref{sec:preconditioner}).
+  operator (see section \ref{sec:sub:preconditioner}).
 \end{itemize}
 Once implemented, those linear operators/preconditioners need to be
 passed to suitable existing linear solvers.
@@ -1117,24 +1122,27 @@ solvers based on a hybridisation approach is currently explored. Since
 an exact Schur-complement can be formed in this case, hybridisation
 avoids the expensive iteration over the full linear system, and
 potentially leads to significant improvements in performance.
-\subsection{\label{sec:preconditioner}Preconditioner}
+
+\subsection{\label{sec:sub:preconditioner}Preconditioner}
+
 To precondition the strongly anisotropic Helmholtz-operator for the
-pressure system, the tensor-product multigrid approach in
-\cite{Borm2001} is used in LFRic. This is a more advanced solver than
+pressure system, the tensor-product multigrid approach in~\cite{Borm2001} 
+is used in LFRic. This is a more advanced solver than
 the current tridiagonal vertical-only preconditioner in the ENDGame
 model. The multigrid algorithm currently being developed in LFRic has been tested
 extensively for representative elliptic equations in atmospheric
-modelling in \cite{Mueller2014,Dedner2016}, including a mixed-finite
-element discretisation of a linear gravity wave system in
-\cite{Mitchell2016}. The key idea to address the strong vertical
+modelling in~\cite{Mueller2014,Dedner2016}, including a mixed finite
+element discretisation of a linear gravity wave system in~\cite{Mitchell2016}. 
+The key idea to address the strong vertical
 anisotropy due to the high-aspect ratio of the domain is to combine
 vertical-only smoothing (line relaxation) with a horizontal multigrid
 hierarchy. To allow the easy construction of the vertical-only
 operators in the Schur-complement from the finite element
 discretisation of the full equations, a suitable operator algebra was
-developed in \cite{Mitchell2016} and tested in the Firedrake
+developed in~\cite{Mitchell2016} and tested in the Firedrake
 library. For horizontally discontinuous function spaces (such as the
-pressure space and the vertical-only velocity), operators can be
+pressure space, $Q_0^D$, and the vertical-only velocity, see
+Subsection~\ref{sec:sub:spatial} for more details), operators can be
 assembled into a partially assembled matrix type, which stores all
 couplings within one vertical column. Matrices of this type can be
 multiplied, added and, most importantly, inverted in the tridiagonal
@@ -1144,12 +1152,19 @@ Helmholtz-solver and preconditioner. The same data structures were
 implemented as derived Fortran 2003 types in the LFRic code and form
 the building blocks of the tensor-product multigrid preconditioner for
 the elliptic Helmholtz system.
+The velocity field $\mathbf{u}$ is placed in the $RT_0$ space; the vorticity 
+$\xi\equiv\nabla\times\mathbf{u}$ is placed in the $N_0$ space; density, $\rho$, 
+and Exner pressure, $\Pi$, are placed in the $Q_0^D$ space; as mentioned above 
+the potential temperature, $\theta$, is placed in a scalar-space corresponding 
+to the vertical components of $RT_0$ with dofs located in the
+centre of the top and bottom faces of a cell. See~\cite{melvin2018} for a full
+description of the discretisation used in the GungHo model.
 
 Compared to simpler preconditioners, which do not combine vertical
 line relaxation with a horizontal multigrid hierarchy, the
 tensor-product multigrid approach typically reduces the solution time
 of the pressure system by a factor of at least two
-\cite{Mueller2014,Mitchell2016}. However, since the Helmholtz system
+~\cite{Mueller2014,Mitchell2016}. However, since the Helmholtz system
 contains a zero-order term, only a small number ($\approx 3-4$) of
 multigrid levels is required (independent of the grid
 resolution). This greatly increases scalability since it avoids global
