@@ -18,9 +18,9 @@
 \begin{document}
 \begin{frontmatter}
 
-\title{LFRic: The design and implementation of a Weather and Climate model}
+\title{LFRic: Meeting the challenges of scalability and performance portability in Weather and Climate models}
 
-\author[met]{S.~Adams}
+\author[met]{S.~V.~Adams}
 \author[hartree]{R.~W.~Ford}
 \author[met]{M.~Hambley}
 \author[met]{J.~M.~Hobson}
@@ -32,7 +32,7 @@
 \author[met]{S.~Mullerworth}
 \author[hartree]{A.~R.~Porter}
 \author[downunder]{M.~Rezny}
-\author[met]{B.~Shipway}
+\author[met]{B.~J.~Shipway}
 \author[met]{R.~Wong}
 
 
@@ -71,7 +71,7 @@ parallelism Exascale computers are likely exhibit.
 In collaboration with academic partners, the Met Office is developing
 a new dynamical core, called GungHo~\cite{melvin2018}. By employing a
 mixed Finite Element Method (hereafter FEM) on an unstructured mesh, the new dynamical
-core is designed to maintain the scientific accuracy of the current
+core is designed to maintain the scientific accuracy of the current finite difference
 Unified Model (UM) dynamical core (ENDGame~\cite{QJ:QJ2235}), whilst
 allowing improved scalability by avoiding polar singularities of the
 latitude-longitude (lat-lon) grid. A new atmospheric model and software infrastructure,
@@ -81,7 +81,7 @@ grid is inherent in the data structures of the UM.
 
 The software design is based on a layered architecture and a 
 {\em separation of concerns} between the natural science code in which
-the mathematics is expressed and the computational science code where the
+the mathematics is expressed, and the computational science code where the
 parallelism and other performance optimisations are expressed. In particular,
 there are three layers. The top layer, called the algorithm layer, is where high-level mathematical 
 operations on global fields are performed. The bottom layer is the kernel layer
@@ -101,8 +101,8 @@ computationally challenging problems must be tackled. Thus, the
 ability to generate optimisations for current architectures is also
 required. 
 
-The paper describes the model development and is organised as follows;
-the GungHo dynamical core and computational aspects are presented in
+The paper describes the model development and is organised as follows:
+The GungHo dynamical core and computational aspects are presented in
 Section~\ref{sec:GH}. The software design for the separation of
 concerns and PSyKAl API are described in
 Section~\ref{sec:SoC}. The model infrastructure and use of libraries
@@ -116,15 +116,19 @@ section~\ref{sec:con}.
 The dynamical core in an atmospheric model is responsible for
 simulating those fluid dynamical processes that are resolved by the
 underlying mesh. It is then coupled to a suite of subgrid physical
-parametrization schemes for those processes, such as cloud
-microphysics and convection, that are not resolved on the mesh.  The
-GungHo dynamical core was developed to replace the current ENDGame
+parametrization schemes for processes that are not resolved (such as
+cloud microphysics and convection) and those that act as subgrid
+diabatic sources (such as longwave and shortwave radiative
+heating/cooling). For the purposes of this paper we only consider
+the dry dynamical core without the subgrid processes.
+
+The GungHo dynamical core was developed to replace the current ENDGame
 dynamical core in the UM. The GungHo model seeks to replicate the
 accuracy and stability of ENDGame whilst replacing the regular lat-lon
 grid with a quasi-uniform grid and so avoid the problems associated
 with the polar singularities in ENDGame, resulting from the
 convergence of meridians at the poles. The mesh used in GungHo is an
-equi-angular cubed-sphere, shown in Figure \ref{fig:cubed-sphere}.
+equi-angular cubed-sphere, shown in Figure~\ref{fig:cubed-sphere}.
 This has the benefit of near uniform resolution across the globe and a
 maximum/minimum edge length ratio of $1.3$ achieved by using only
 quadrilateral cells.  However, this quasi-uniform mesh comes at the
@@ -159,10 +163,10 @@ the index of the vertical layer; \textit{df} is the index of a particular
 data point within the cell, allowing multiple data points within a single cell, and 
 finally \textit{map} is an array containing the address of data points at 
 the bottom of the model column.
-Using an extruded mesh of this type with direct access in the vertical, the cost
-of the indirectly addressed horizontal index can be hidden (see~\cite{gmd-9-3803-2016})
-provided enough layers are used. Since the current UM uses O(100) layers the 
-cost of the indirection is minimal.
+Using an extruded mesh of this type with direct access and data contiguity
+in the vertical, the cost of the indirectly addressed horizontal index can 
+be offset (see~\cite{gmd-9-3803-2016}) provided enough layers are used. 
+Since the current UM uses~$O(100)$ layers the cost of the indirection is minimal.
 %
 
 \subsection{Formulation\label{sec:sub:formulation}}
@@ -192,7 +196,8 @@ heat at constant pressure and $\kappa\equiv R/c_p$.
 In order to maintain a similar
 accuracy to ENDGame on a quasi-uniform mesh a mixed Finite Element Method is 
 used~\citep{cotter2012, natale2016}. This gives the finite element equivalent 
-of the C-grid-Charney-Phillips staggering used in ENDGame, but without relying
+of the C-grid-Charney-Phillips staggering~\citep{charney1953numerical, arakawa1977computational}
+used in ENDGame, but without relying
 on the orthogonality of the mesh for numerical consistency. The mixed FEM
 is very general in terms of the order of approximation and shape of the 
 underlying mesh, allowing the method to be tailored to specific needs of the 
@@ -205,9 +210,10 @@ continuous tangential components; $RT_p$ containing flux vectors that have
 continuous normal components; $Q_p^D$ containing discontinuous volume 
 integrated scalars; along with a horizontally discontinuous vertically continuous 
 space~\citep{natale2016} for $\theta$ to mimic the Charney-Phillips grid staggering 
-used in ENDGame.  In practice the lowest order spaces $p=0$ are used, the resulting
-location of the ``degrees of freedom'' (hereafter dofs) for these spaces are shown in
-figure \ref{fig:fem-spaces}. 
+used in ENDGame. Here continuous means that neighbouring cells share degrees of freedom 
+(hereafter dofs) located on the shared entities (e.g. faces, edges, vertices).
+In practice the lowest order spaces $p=0$ are used, the resulting location of the dofs
+for these spaces are shown in Figure~\ref{fig:fem-spaces}. 
 %
 \begin{figure}
 \centering
@@ -249,9 +255,9 @@ neighbouring cells and evaluates this at a fixed point to compute the advective
 term. This only requires a local computation and the stencil is fixed, reducing the 
 amount of computation needed. However, in order to obtain a stable scheme it is 
 wrapped in a multi-stage evaluation, meaning that the advection update needs to be 
-computed a number of times per Picard iteration, nominally 3 stages are used.
-\textcolor{red}{\em (Comment: Explain/give reference to what is Picard iteration?)}
-Future work is evaluating the use of flux-form Semi-Lagrangian scheme (COSMIC) ~\cite{Leonard1996} 
+computed a number of times per Picard iteration (see Section~\ref{sec:sub:timestepping}), 
+nominally 3 stages are used. \textcolor{red}{\em (Comment: Explain/give reference to what is Picard iteration?)}
+Future work will evaluate the use of flux-form Semi-Lagrangian scheme (COSMIC) ~\cite{Leonard1996} 
 to replace the current scheme. This carries many of the 
 benefits of the semi-Lagrangian scheme used in ENDGame but without the 
 communication costs (due to use of a quasi-uniform mesh) as well a simplification 
@@ -270,8 +276,11 @@ use of a quasi-Newton method,
 \end{equation}
 %
 for the increment $\mathbf{x}'\equiv\mathbf{x}^{(k+1)}-\mathbf{x}^{(k)}$ on the $k^{\rm{th}}$ 
-estimate from the Picard iteration of the prognostic variables $\mathbf{x}\equiv\left(\mathbf{u},\,\theta,\,\rho,\,\Pi\right)$. The linear system $\mathcal{L}\left(\mathbf{x}^n\right)$ is chosen as to contain the terms necessary for stability of the fast acoustic and gravity waves as in~\cite{}{QJ:QJ2235} \textcolor{red}{(Comment: Broken reference)} and is formed from a linearisation about the previous timestep fields $\mathbf{x}^n$. The method used to solve this linear system is detailed in Section~\ref{sec:Solver}. An overview of the 
-time-step is given in Table \ref{tab:timestep}.
+estimate from the Picard iteration of the prognostic variables $\mathbf{x}\equiv\left(\mathbf{u},\,\theta,\,\rho,\,\Pi\right)$. 
+The linear system $\mathcal{L}\left(\mathbf{x}^n\right)$ is chosen as to contain the terms necessary for stability of 
+the fast acoustic and gravity waves as in~\cite{QJ:QJ2235} and is formed from a linearisation about the previous 
+timestep fields $\mathbf{x}^n$. The method used to solve this linear system is detailed in Section~\ref{sec:Solver}. 
+An overview of the time-step is given in Table~\ref{tab:timestep}.
 %
 \begin{table}
 \begin{centering}
@@ -301,7 +310,7 @@ Science applications in general and weather and climate codes in
 particular are written in high-level languages such as Fortran or
 C/C++. Indeed, Fortran is commonly employed for weather and climate
 codes and can be considered a Domain Specific Language (DSL) for
-numerical computation. Using a such a high-level language, an
+numerical computation. Using such a high-level language, an
 algorithm is written to solve a mathematical problem without
 consideration for the processor architecture. The compiler generates
 machine specific instructions and can, in principle, make optimisation
@@ -311,10 +320,10 @@ This abstraction of a separation of concerns between mathematics code
 and machine code is powerful and enables both the portability of
 science code to different processor architectures and allows the
 application to exploit a significant\footnote{What constitutes good
-  performance depends on a variety of factors.} fraction of the peak
+performance depends on a variety of factors.} fraction of the peak
 performance of the processor. Whilst many science applications may
-contain code optimisations in performance critical sections, for
-example, blocking or tiling loop nests to better utilise cache memory,
+contain code optimisations in performance critical sections (for
+example, blocking or tiling loop nests to better utilise cache memory),
 in general these applications have relied on clock
 speed increases between processor generations to increase performance.
 
@@ -354,7 +363,7 @@ loop nest order. All these parallel and performance features
 break the data abstraction of the separation of concerns between the
 maths/science code and architecture specific code.
 
-The design for the LFRic model is based upon computational science
+The design for the LFRic model is based upon a computational science
 report from Phase 1 of the GungHo project~\cite{GHP1_CSR}. By
 employing a layered software architecture, the complex parallel code
 code can be kept separate from the science code. As outlined in 
@@ -363,7 +372,7 @@ Algorithms are expressed as operations on global, data-parallel field objects,
 in the top algorithm layer. The middle PSy layer (Section~\ref{sec:intro}) 
 contains the horizontal looping and is where the data parallelism is expressed. 
 The bottom layer is comprised of the kernels which encode the operation invoked in the
-algorithm layer. These operate on a single column of data. 
+algorithm layer. These are chosen to operate on a single column of data. 
 Shown in Figure~\ref{fig:psykal} is a schematic diagram of this
 layered software achitecture. The red arrows indicate the control flow
 through the different layers. 
@@ -379,11 +388,11 @@ through the different layers.
 
 The APIs between the layers are tightly controlled. The PSy layer can
 only be called from the algorithm layer by an {\em invoke} procedure
-call. The permitted arguments to these invoke prodecures are restricted
+call. The permitted arguments to these invoke procedures are restricted
 to be the kernels and the fields that the kernels will operate on. The
 kernels can only be called from the PSy layer with the unpacked data
 arrays, scalars for loop bounds and supporting arrays of both reals
-and integers for Finite Element Method over an unstructured mesh.
+and integers for the Finite Element Method over the horizontally unstructured mesh.
 These coding rules are enforced by using Fortran 2003 object
 orientation coding style to control the APIs. By restricting the
 domain of the problem from all numerical mathematics to only that
@@ -392,7 +401,7 @@ possible to constrain the parallelism to the PSy layer. Restoring
 the separation of concerns between the science code and the
 parallel/optimisation code means that in principle different programming
 models can be employed in the PSy layer without changing the science
-code. Moreover, the PSyKAl API can be thought of a Domain Specific
+code. Moreover, the PSyKAl API can be thought of as a Domain Specific
 Embedded Language (DSEL).
 
 Compilers in general have to be conservative about the assumptions
@@ -408,7 +417,7 @@ $Q_p^D$ function space, see Subsection~\ref{sec:sub:spatial} for more details)
 and the ones that do ({\em e.g.} velocity defined on $RT_0$ space, 
 Subsection~\ref{sec:sub:spatial}). This information is embedded in
 Fortran as part of the kernel. Other information encoded in this way
-is the loop iterator (for example {\em cells}), whether the kernel
+is the loop iterator (for example, the choice to loop over horizontal {\em cells}), whether the kernel
 operates on a field which lives on a specific function space, whether
 any of the fields live on common function spaces and for FEM kernels
 whether the kernel uses any basis functions. 
@@ -428,20 +437,20 @@ the horizontal mesh elements and calling the kernels
 themselves. However, PSyclone can also perform transformations and
 target other progamming models such as OpenMP or OpenACC. PSyclone is
 then in effect a Domain Specific Embedded compiler. PSyclone also does
-one other important code generation function. In the algorithm layer,
+one other important code generation function; In the algorithm layer,
 the calls to the invoke procedure are replaced with a specific
-prodcedure call to the PSy layer. The PSy layer code can then be
+procedure call to the PSy layer. The PSy layer code can then be
 optimised depending on the kernels in the invoke and the metadata.
 
 \subsection{\label{sec:sub:implement}Implementation}
 The algorithm layer code is written in Fortran 2003. However, this
 code is not actually compiled, it is parsed and processed by PSyclone
 first. Most of the Fortran is left as written. The exception to this
-is the call to an {\em invoke} procedure which does not exist in the 
-source code and is instead generated by PSyclone. 
-The invoke means {\em execute these kernels looping over the horizontal mesh}. 
-PSyclone can paralellise this horizontal looping with MPI,
-openMP or both. Shown in the code fragment below is an invoke
+is the call to any {\em invoke} procedure. The invoke procedure does not 
+exist as such in the source code. Instead, an invoke means {\em execute these
+kernels looping over the chosen entities}, hence instructing PSyclone on how to 
+generate parallel code. PSyclone can paralellise this horizontal looping with MPI,
+OpenMP or both. Shown in the code fragment below is an invoke
 procedure call from the algorithm layer.
 
 \begin{lstlisting}[language=Fortran,caption={Code fragment showing an
@@ -688,7 +697,7 @@ cells is up to date with the owner of that data (`clean' halos) or
 whether a parallel computation has updated the field on the owning
 partition and the local halos are out of date (`dirty' halos). When the
 PSy layer determines that a halo exchange may be required, it first
-checks the state of the halos and if they are `dirty' it calls the halo
+checks the state of the halos and if, and only if, they are `dirty' it calls the halo
 exchange functionality.
 
 \subsection{\label{sec:sharedmem}Shared Memory Optimisation}
@@ -696,7 +705,7 @@ exchange functionality.
 As with all the parallelisation within LFRic, the shared memory
 parallelism is implemented within the PSy layer. The directives used to
 implement the shared memory parallelism are inserted into the PSy layer
-code. The finite element formulation makes use of data on mesh entities
+code. The finite-element formulation makes use of data on mesh entities
 shared by more than one cell. That means that two threads working on
 different cells may try writing to a dof shared between the cells at the
 same time. In order to prevent these write contentions, the mesh is
@@ -946,7 +955,7 @@ the PSy layer that it will generate. The script takes this, modifies
 it using transformations and then returns it.
 
 Applying the OpenMP script to the invoke call described in
-section~\ref{sec:SoC} results in the following generated PSy layer
+Section~\ref{sec:SoC} results in the following generated PSy layer
 code shown in listing~\ref{lst:PSy_omp}. 
 
 \begin{lstlisting}[language=Fortran, numbers=left,caption={Code 
@@ -1040,7 +1049,7 @@ prognostic unknowns in each step of the non-linear Picard
 iteration (Subsection~\ref{sec:sub:timestepping}). 
 Since the system is ill-conditioned, it needs to be
 preconditioned efficiently. This is achieved by the (approximate)
-reduction to an elliptic system for the pressure, which is
+reduction to an elliptic system for the pressure, which itself is
 preconditioned with a tensor-product multigrid algorithm~\cite{Borm2001} 
 (see Subsection~\ref{sec:sub:preconditioner}). To increase
 efficiency, the pressure preconditioner can be wrapped in its own
@@ -1097,9 +1106,9 @@ To solve a particular problem, the user has to develop bespoke derived
 types for the corresponding linear operator and preconditioners. Note
 that the \texttt{apply()} methods of those derived types contain
 invoke calls to kernels, which guarantees optimal performance of the entire
-model. For example, to construct a solver for the implicit linar
+model. For example, to construct a solver for the implicit linear
 system which is inverted in every semi-implicit time-step, the user
-implements the following objects (see Fig. \ref{fig:class_hierarchy},
+implements the following objects (see Fig.~\ref{fig:class_hierarchy},
 right):
 \begin{itemize}
 \item A linear operator type which applies the full linear system to
@@ -1111,7 +1120,7 @@ right):
 \item A linear operator type which applies the Helmholtz-operator for
   the pressure system;
 \item A preconditioner type which approximately inverts the Helmholtz
-  operator (see section \ref{sec:sub:preconditioner}).
+  operator (see Section~\ref{sec:sub:preconditioner}).
 \end{itemize}
 Once implemented, those linear operators/preconditioners need to be
 passed to suitable existing linear solvers.
@@ -1131,7 +1140,7 @@ is used in LFRic. This is a more advanced solver than
 the current tridiagonal vertical-only preconditioner in the ENDGame
 model. The multigrid algorithm currently being developed in LFRic has been tested
 extensively for representative elliptic equations in atmospheric
-modelling in~\cite{Mueller2014,Dedner2016}, including a mixed finite
+modelling in~\cite{Mueller2014,Dedner2016}, including a mixed-finite
 element discretisation of a linear gravity wave system in~\cite{Mitchell2016}. 
 The key idea to address the strong vertical
 anisotropy due to the high-aspect ratio of the domain is to combine
