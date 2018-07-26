@@ -6,7 +6,7 @@
 \usepackage{xcolor}
 \usepackage{listings}
 \lstset{language=[08]Fortran,
-  basicstyle=\small,
+  basicstyle=\small\ttfamily,
   %identifierstyle=\color{green},
   commentstyle=\color{red},
   keywordstyle=\color{blue},
@@ -56,8 +56,8 @@
 \newpage
 \section{\label{sec:intro}Introduction}
 
-In common with many science applications, Exascale computing presents
-a disruptive change for weather and climate models. However, the
+In common with many science applications, weather and climate models are 
+facing a disruption change with the push to Exascale computing. However, the
 difficulty in porting and optimising legacy codes to new hardware is
 particularly acute for this domain as the software is large ($O(10^6)$
 lines of code), takes a long time to develop (a decade or more for a new
@@ -357,18 +357,11 @@ CPU + GPU with distinct memory spaces require additional programming
 models. Moreover, the algorithms employed combined with data
 parallelism may not be sufficient to exploit this explosion of parallelism.
 
-Many programming models exist, MPI and Partitioned Global Address
-Space (PGAS) languages, such as Co Array Fortran, Unified Parallel C,
-Chapel and GASPI for distributed memory, new programming languages such
-as OpenCL or CUDA and directive based programming models for threaded
-and shared memory parallelism such as OpenMP or OpenACC.
-\textcolor{red}{(Comment: CUDA is certainly a programming language, or like one, 
-but OpenCL is a library as far as I can see. 
-Is it okay to refer to it as a programming language or 
-would something else be more appropriate?
-In general this sentence runs on a lot. 
-Maybe try breaking it into shorter ones.)} 
-However,
+A great number of programming models exist. For distributed memory there are, 
+for instance, MPI and Partitioned Global Address Space (PGAS) languages, such 
+as Co Array Fortran, Unified Parallel C, Chapel and GASPI. For threaded and 
+shared-memory parallelism there are directive-based solutions such as OpenMP 
+and OpenACC as well as languages such as CUDA and OpenCL. However,
 the programming models lag behind in development of the rapidly evolving computer
 architectures and particular models lack feature or processor coverage
 making the choice of programming model difficult. This is ambiguity is
@@ -485,15 +478,13 @@ invoke procedure from the Algorithm layer},label={lst:invoke}]
              matrix_vector_kernel_type(v(m), s(m), mm), &
              enforce_bc_kernel_type( v(m) ) )
 \end{lstlisting}
-\textcolor{red}{(Comment: Code is usually presented in a monospaced font, not 
-a proportional font equally spaced.)}
 
 There are three kernels in this invoke. The first \verb+setval_c+ is
 an example of a {\em point-wise} kernel. The same operation, setting all
 the values of the field to the same scalar, is applied to each dof so no 
 FEM structure is required. This is an example of a {\em built-in} operation 
 generated in place in the PSy layer by PSyclone. The second
-kernel is written as a constructor call to the kernel \textcolor{red}{(Comment: "Constructor of the kernel"?)}, so that it is
+kernel is written as a call to the constructor of the kernel type, so that it is
 valid Fortran. The arguments to this call \verb+v+ and \verb+s+ are
 {\em fields} and \verb+mm+ is an {\em operator}, in this case a mass
 matrix.
@@ -508,8 +499,7 @@ generated Algorithm layer code},label={lst:invoke_56}]
 
 Shown in listing~\ref{lst:PSy1} is a code fragment from the generated PSy layer for
 the invoke shown in listing~\ref{lst:invoke}.
-\textcolor{red}{(Comment: The code listings can become broken over two pages. 
-Is there a command to enforce keeping them together?)}
+
 \begin{lstlisting}[language=Fortran, numbers=left,caption={Code 
 fragment of the generated PSy layer},label={lst:PSy1}]
  CALL v_proxy%set_dirty()
@@ -570,8 +560,6 @@ kernel is general and can operate over any space, hence, the
 first field must correspond to the first function space of the operator and the
 function space of second field must correspond to the second function
 space of the operator. 
-
-{\em why this is great}
 
 
 \section{\label{sec:lib}Infrastructure}
@@ -771,12 +759,11 @@ file format are defined by an XML file which hides a lot of complexity from the 
 Prior to 2016, XIOS only supported read and write of NetCDF file formats that follow the CF
 conventions.  As previously explained in Section~\ref{sec:GH}, the LFRic implementation uses
 semi-structured meshes and a FEM formulation, where variables are held on
-different elements of the mesh (nodes, edges or faces) \textcolor{red}{(Comment: What about vertices?)}.
-Therefore, the I/O system needs to
+different elements of the mesh (vertices, edges or faces). Therefore, the I/O system needs to
 handle data structured in this way. The UGRID-NetCDF format has been chosen as the main
 LFRic input mesh format and also output format for diagnostics and model dumps~\cite{UgridSpec}.
 In the UGRID convention the topology of the underlying unstructured mesh is stored as well as
-data, and data can be defined on any of the mesh elements: nodes, edges, or faces.
+data, and data can be defined on any of the mesh elements: vertices, edges, or faces.
 Working in collaboration with IPSL (Institut Pierre Simon LaPlace), the ability to write the
 UGRID format was added to XIOS in 2016 in order to support LFRic. 
 
@@ -823,9 +810,6 @@ extracted.
 \centering\includegraphics[width=0.8\linewidth]{psyclone_flow.pdf}
 \caption{\label{fig:psyclone-arch}Data flow within the PSyclone architecture.}
 \end{figure}
-
-\textcolor{red}{(Comment: Data flow figure doesn't show rewriting of kernels. 
-Is this intentional, for clarity, or is it something we want to include?)}
 
 PSyclone must then perform two tasks: firstly, generate an internal
 representation, known as a {\em schedule}, of a PSy layer routine for each invoke in
