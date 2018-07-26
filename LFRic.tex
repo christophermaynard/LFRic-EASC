@@ -1110,10 +1110,10 @@ a relative tolerance of $10^{-6}$.
 \end{figure}
 
 Shown in Figure~\ref{fig:scale_PE} is 
-the parallel efficiency of the LFRic time-step for a very hight 
+the parallel efficiency of the LFRic time-step for a very high 
 resolution model run. The mesh is a $C1944$ cubed-sphere with 30 
 levels, where each panel has $1944 \times 1944$ cells. This roughly corresponds 
-to a 5km resolution. The science configuration is the baroclinic wave 
+to a 5km global resolution. The science configuration is the baroclinic wave 
 test~\cite{qj.2241} with a 75 second time-step. The code was compiled 
 to production level (\verb+ -O3+) with the Intel17 compiler. The model 
 was run in hybrid mode with both MPI and OpenMP on the Met Office Cray 
@@ -1122,41 +1122,57 @@ XC40. Each node comprises of dual socket Intel Xeon (Broadwell)
 socket with six OpenMP threads per MPI rank. 
 
 The model shows good scaling out to a very large number of nodes,
-$4374$, which is $157366$ cores. Scaling starts to drop off to
-just below $70\%$ compared to $216$ nodes. Here, the local volume has
-been reduced to $12\times 12$ with only $30$ levels that is only
-$4320$ dofs per unit of parallelism for the pressure space. The ratio
-of communication to computation cost will become worse if the problem
-is scaled further. Moreover, the number of
-iterations for the solver is relatively large and with multiple solves
-per time-step and five global sums per iteration of the BiCGStab
-algorithm, means the cost global sum becomes prohibitive. 
+$4374$, which is $157366$ cores. Scaling starts to drop off at this
+scale to just below $70\%$ compared to $216$ nodes. Here, the local
+volume has been reduced to $12\times 12$ with only $30$ levels that is
+only $4320$ dofs per unit of parallelism for the pressure space. The
+ratio of communication to computation cost will become worse if the
+problem is scaled further. Moreover, the number of iterations for the
+solver is relatively large and with multiple solves per time-step and
+five global sums per iteration of the BiCGStab algorithm, means the
+cost global sum becomes prohibitive.
 
 The new solver implementation will enable better scaling by reducing
 the number of Krylov solver iterations required by using a much more
 efficient preconditioner. This will also reduce the absolute
 performance, {\em i.e.} run-time. Further improvemnents are then
-planned for computational optimisation once the solver algorithmically
+planned for computational optimisation once the solver is closer to
+being algorithmically
 optimal.
 
 \begin{figure}
   \begin{center}
     \subfloat[]{\includegraphics[width=0.75\linewidth]{strong_mv_T1.eps}}\\
     \subfloat[]{\includegraphics[width=0.75\linewidth]{strong_mv_T6.eps}}
-    \caption{\label{fig:OMP_scale}Scaling of the matrix-vector routine 
-      with a) $18$ MPI ranks per socket and b) $3$ MPI ranks per
-      socket and $6$ OpenMP threads per MPI rank. Same colour, same
-      hatching shows strong scaling (the dashed line is to guide the
-      eye), same colour diffent hatching shows weak scaling at
+    \caption{\label{fig:OMP_scale}Scaling of the matrix-vector routine
+      run-time in seconds for $100$ time-steps, with different numbers
+      of nodes for a) $18$ MPI ranks per socket and b) $3$ MPI ranks
+      per socket and $6$ OpenMP threads per MPI rank. Same colour,
+      same hatching shows strong scaling (the dashed line is to guide
+      the eye), same colour diffent hatching shows weak scaling at
       different local volumes. The legend denotes the cubed-sphere
       mesh size.}
   \end{center}
 \end{figure}
 
 Shown in Figure~\ref{fig:OMP_scale} is the effect of using OpenMP on 
-scaling for the matrix-vector routine. The 
-
-
+scaling for the matrix-vector routine. The data were produced using
+the CrayPAT profiling tool on the Met Office Cray XC40. This was the
+most expensive routine in the profile, as it is the dominant part of
+the solver. The code was
+again compiled with the Intel17 compiler. The model employs redundant
+computation into the halos. Each processor computes the contribution
+to dofs that reside on a shared mesh
+entity (such as a face) which belong to a cell adjacent to a halo cell
+from both the ``owned'' cell and the halo cell. Thus avoiding
+comnuication that would otherwise be required to correctly calculate
+the contribution of neighbour cells to that dof. Comparing MPI only to
+the hybrid mode, each processor in the former regime has more work to
+do in the case of redundant computation from the scaling of volume to
+surface area. Hybrid mode has less cells to redundantly compute than
+MPI only. Choosing redundant computation as a communication reduction
+algorithm favours threading. Hence OpenMP is faster.
+ 
 
 \section{Conclusion}
 \label{sec:con}
