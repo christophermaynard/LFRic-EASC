@@ -123,8 +123,8 @@ Section~\ref{sec:GH}. The software design for the separation of
 concerns and PSyKAl API are described in
 Section~\ref{sec:SoC}. The model infrastructure and use of libraries
 is discussed in Section~\ref{sec:lib}. PSyclone, the code generator is
-presented in Section~\ref{sec:psyclone} and linear solvers and 
-preconditioners are presented in Section~\ref{sec:Solver}.
+presented in Section~\ref{sec:psyclone} and \textcolor{red}{linear solvers and 
+preconditioners are presented in Section~\ref{sec:Solver}.}
 Finally a scaling analysis is presented in Section~\ref{sec:scal} and
 conclusions drawn in section~\ref{sec:con}.
 
@@ -164,10 +164,7 @@ corners.
 \centering\includegraphics[width=0.6\linewidth]{Cubed-Sphere.png}
 \caption{\label{fig:cubed-sphere} Equi-angular cubed-sphere mesh as
 used in GungHo with $12x12$ subdivisions per face, 
-referred to as a $C12$ mesh. This gives $864$ columns of cells. 
-\textcolor{red}{(Comment: Bits of fluff on the diagram. 
-Where did this come and is an acknowledged required?})
-}
+referred to as a $C12$ mesh. This gives $864$ columns of cells.}
 \end{figure}
 %
 
@@ -245,9 +242,7 @@ for these spaces are shown in Figure~\ref{fig:fem-spaces}.
 \caption{\label{fig:fem-spaces} Location of degrees of freedom at $p=0$ for 
 (a) $Q_{1}$, (b) $N_0$, (c) $RT_0$ and (d) $Q_0^D$ finite element spaces.
 Circles correspond to scalar degrees of freedom and triangles to vector degrees
-of freedom.
-\textcolor{red}{(Comment: Dofs on lower two diagrams are not really visible.)}
-}
+of freedom.}
 \end{figure}
 %
 The velocity field $\mathbf{u}$ is placed in the $RT_0$ space; the vorticity 
@@ -278,7 +273,7 @@ neighbouring cells and evaluates this at a fixed point to compute the advective
 term. This only requires a local computation and the stencil is fixed, reducing the 
 amount of computation needed. However, in order to obtain a stable scheme it is 
 wrapped in a multi-stage evaluation, meaning that the advection update needs to be 
-computed a number of times per Picard iteration (see Section~\ref{sec:sub:timestepping}), 
+computed a number of times per Picard iteration (see Subsection~\ref{sec:sub:timestepping}), 
 nominally 3 stages are used. \textcolor{red}{(Comment: Explain/give reference to what is Picard iteration?)}
 Future work will evaluate the use of flux-form Semi-Lagrangian scheme (COSMIC)~\cite{Leonard1996} 
 to replace the current scheme. This carries many of the 
@@ -576,7 +571,7 @@ first field must correspond to the first function space of the operator and the
 function space of second field must correspond to the second function
 space of the operator. 
 
-{\em why this is great} \textcolor{red}{(Comment: Unfinished paragraph?)}
+{\em why this is great}
 
 
 \section{\label{sec:lib}Infrastructure}
@@ -1082,7 +1077,7 @@ right):
 \item A linear operator type which applies the Helmholtz-operator for
   the pressure system;
 \item A preconditioner type which approximately inverts the Helmholtz
-  operator (see Section~\ref{sec:sub:preconditioner}).
+  operator (see Subsection~\ref{sec:sub:preconditioner}).
 \end{itemize}
 Once implemented, those linear operators/preconditioners need to be
 passed to suitable existing linear solvers.
