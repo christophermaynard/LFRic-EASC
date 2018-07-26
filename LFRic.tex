@@ -153,7 +153,7 @@ appropriate numerical method to avoid errors being dominated by the
 corners.
 %
 \begin{figure}
-\centering\includegraphics[width=0.8\linewidth]{Cubed-Sphere.pdf}
+\centering\includegraphics[width=0.6\linewidth]{Cubed-Sphere.png}
 \caption{\label{fig:cubed-sphere} Equi-angular cubed-sphere mesh as
 used in GungHo with $12x12$ subdivisions per face, 
 referred to as a $C12$ mesh. This gives $864$ columns of cells. }
@@ -940,12 +940,16 @@ fragment of the generated PSy layer},label={lst:PSy_omp}]
   CALL v_proxy%set_dirty()
   CALL v_proxy%halo_exchange(depth=1)
 \end{lstlisting}
+The transformation has resulted in a call to the LFRIc infrastructure
+to the obtain the colouring information, a loop over the number of
+colours, then the OpenMP workshare directives, which parallelise the
+loop over the cells the colour.
 
-Since the argument list of a kernel subroutine can quickly become long
-and complicated, PSyclone also provides a kernel-stub generator. Given
-kernel meta-data, this tool generates a skeleton Fortran subroutine
-with all of the necessary arguments declared. The kernel developer
-then need only implement the body of the kernel.
+%Since the argument list of a kernel subroutine can quickly become long
+%and complicated, PSyclone also provides a kernel-stub generator. Given
+%kernel meta-data, this tool generates a skeleton Fortran subroutine
+%with all of the necessary arguments declared. The kernel developer
+%then need only implement the body of the kernel.
 
 \section{\label{sec:Solver}Linear solvers and preconditioners}
 Iterative solvers for large sparse linear systems of equations are
