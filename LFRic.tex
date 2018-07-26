@@ -1081,12 +1081,35 @@ multigrid levels is required (independent of the grid
 resolution). This greatly increases scalability since it avoids global
 couplings which arise on the coarsest level.
 
-\section{\label{sec:scal}Scaling}.
+\section{\label{sec:scal}Scaling}
+The key performance metric for
+LFRic and GungHo is scalability. The use of an unstructured mesh of
+GungHo and the solver construction described in
+section~\ref{sec:Solver} should enable the LFRic model to scale to a
+very large degree of parallelism. However, compiling some of the
+Fortran 2003 OO constructs necessary to build such a solver
+infrastructure is a challenging task for most compilers which has
+delayed implementing such a solver. This remains a work in progress.
+
+The February release of LFRic, named Dromedary, contains a simpler,
+Helmholtz pressure solver with a naive(?) preconditioner. Shown in
+figure~\ref{fig:scale_PE} is the parallel efficiency of the LFRic
+time-step for a very hight resolution model run. The Mesh is a $C1944$
+cubed-sphere with 30 levels, where each panel has $1944^2$ cells. This
+roughly corresponds to a 5km resolution. The science configuration is
+the baroclinic wave test with a 75 second timestep. The code was
+compiled to production level (\verb+ -O3+) with the Intel17
+compiler. The model was run in hybrid mode with both MPI and OpenMP on
+the Met Office Cray XC40. Each node comprises of dual socket Intel
+Xeon (Broadwell) 18-core processors. The affinity was set to be three
+MPI ranks per socket with six OpenMP threads per MPI rank. 
+
 \begin{figure}
   \begin{center}
     \includegraphics[width=0.9\linewidth]{scale.eps}
-    \caption{\label{fig:scale_PE}Parallel efficiency of the LFRic 
-      time-steps compared to 200 nodes.}
+    \caption{\label{fig:scale_PE}Strong scaling of the parallel efficiency of the LFRic 
+      time-steps compared to 216 nodes. {\em N.B.} The x-axis shows a
+      logarithmic scale}
   \end{center}
 \end{figure}
 
@@ -1106,11 +1129,11 @@ couplings which arise on the coarsest level.
   \end{center}
 \end{figure}
 
-Scaling, MPI and OpenMP etc.
+
 
 \section{Conclusion}
 \label{sec:con}
-Conclusions, future work etc
+{\em Huzzah, it works!}
 \newpage
 
 \bibliography{mibib.bib}
