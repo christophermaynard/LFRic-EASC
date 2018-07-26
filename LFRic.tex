@@ -108,12 +108,12 @@ communication of information between distributed memory domains. This
 infrastructure is implemented in Fortran and uses Fortran 2003
 constructs to impose the separation of concerns.
 
-The PSyKAl separation of concens aims to isolate scientist developers
-from the complexities of the LFRic implementation. While algorithm and
-kernel code is written to strict rules, it looks largely like Fortran
-90 code with minimal reference to Fortran 2003 object-orientated
-features. This has enabled scientists to contribute scientific code to
-the LFRic model with relative ease.
+The PSyKAl separation of concens aims to keep single source science
+code separate from the complexities of the LFRic implementation. While
+algorithm and kernel code is written to strict rules, it looks largely
+like Fortran 90 code with minimal reference to Fortran 2003
+object-orientated features. This has enabled developers to contribute
+scientific code to the LFRic model with relative ease.
 
 The paper describes the model development and is organised as follows:
 the GungHo dynamical core and computational aspects are presented in
@@ -1096,23 +1096,23 @@ solver. This employs a Krylov iterative algorithm, GCR on the mixed
 system of velocity, potential temperature, density, exner
 pressure. This is preconditioned by an approximate Schur complement
 for the exner pressure which uses lumped mass matrices. The pressure
-(Helmholtz) system is solved with bicgstab and preconditioned by a
+(Helmholtz) system is solved with BiCGstab and preconditioned by a
 vertical only tridiagonal solver. Both mixed and helmholtz solvers use
-a relative tolerance of $10^-6$.
+a relative tolerance of $10^{-6}$.
 
 \begin{figure}
   \begin{center}
-    \includegraphics[width=0.9\linewidth]{scale.eps}
+    \includegraphics[width=0.85\linewidth]{scale.eps}
     \caption{\label{fig:scale_PE}Strong scaling of the parallel efficiency of the LFRic 
       time-steps compared to 216 nodes. {\em N.B.} The x-axis shows a
       logarithmic scale}
   \end{center}
 \end{figure}
 
-Shown in figure~\ref{fig:scale_PE} is 
+Shown in Figure~\ref{fig:scale_PE} is 
 the parallel efficiency of the LFRic time-step for a very hight 
-resolution model run. The Mesh is a $C1944$ cubed-sphere with 30 
-levels, where each panel has $1944^2$ cells. This roughly corresponds 
+resolution model run. The mesh is a $C1944$ cubed-sphere with 30 
+levels, where each panel has $1944 \times 1944$ cells. This roughly corresponds 
 to a 5km resolution. The science configuration is the baroclinic wave 
 test~\cite{qj.2241} with a 75 second time-step. The code was compiled 
 to production level (\verb+ -O3+) with the Intel17 compiler. The model 
@@ -1121,28 +1121,62 @@ XC40. Each node comprises of dual socket Intel Xeon (Broadwell)
 18-core processors. The affinity was set to be three MPI ranks per 
 socket with six OpenMP threads per MPI rank. 
 
+The model shows good scaling out to a very large number of nodes,
+$4374$, which is $157366$ cores. Scaling starts to drop off to
+just below $70\%$ compared to $216$ nodes. Here, the local volume has
+been reduced to $12\times 12$ with only $30$ levels that is only
+$4320$ dofs per unit of parallelism for the pressure space. The ratio
+of communication to computation cost will become worse if the problem
+is scaled further. Moreover, the number of
+iterations for the solver is relatively large and with multiple solves
+per time-step and five global sums per iteration of the BiCGStab
+algorithm, means the cost global sum becomes prohibitive. 
+
+The new solver implementation will enable better scaling by reducing
+the number of Krylov solver iterations required by using a much more
+efficient preconditioner. This will also reduce the absolute
+performance, {\em i.e.} run-time. Further improvemnents are then
+planned for computational optimisation once the solver algorithmically
+optimal.
 
 \begin{figure}
   \begin{center}
-    \includegraphics[width=0.9\linewidth]{strong_mv_T1.eps}
-    \caption{\label{fig:scale_T1}Scaling of the matrix-vector routine 
-      with 18 MPI ranks per socket.}
+    \subfloat[]{\includegraphics[width=0.75\linewidth]{strong_mv_T1.eps}}\\
+    \subfloat[]{\includegraphics[width=0.75\linewidth]{strong_mv_T6.eps}}
+    \caption{\label{fig:OMP_scale}Scaling of the matrix-vector routine 
+      with a) $18$ MPI ranks per socket and b) $3$ MPI ranks per
+      socket and $6$ OpenMP threads per MPI rank. Same colour, same
+      hatching shows strong scaling (the dashed line is to guide the
+      eye), same colour diffent hatching shows weak scaling at
+      different local volumes. The legend denotes the cubed-sphere
+      mesh size.}
   \end{center}
 \end{figure}
 
-\begin{figure}
-  \begin{center}
-    \includegraphics[width=0.9\linewidth]{strong_mv_T6.eps}
-    \caption{\label{fig:scale_T6}Scaling of the matrix-vector routine 
-      with hybrid 3 MPI ranks per socket and 6 OpenMP threads per MPI rank.}
-  \end{center}
-\end{figure}
+Shown in Figure~\ref{fig:OMP_scale} is the effect of using OpenMP on 
+scaling for the matrix-vector routine. The 
 
 
 
 \section{Conclusion}
 \label{sec:con}
-{\em Huzzah, it works!}
+\begin{itemize}
+   \item It works! 
+   \item single source science code
+   \item target different programming models, MPI and OpenMP
+   \item Shows good scaling
+   \item Choice of alg (redundant computation - communication
+     avoiding) means threading is favoured - OpenMP is faster
+   \item Separation of concerns - modular design don't have to keep
+     implementing over again during dev.
+   \item e.g. Swap ESMF for YAXT
+   \item more to come, solver, less global sums scale better
+   \item Alg optimal -> also much faster
+   \item then computational optimisation
+   \item OpenACC progamming model for GPUs
+   \item more Science, still single source.
+   \item {\em Huzzah}
+\end{itemize}
 \newpage
 
 \bibliography{mibib.bib}
