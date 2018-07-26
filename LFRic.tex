@@ -571,9 +571,10 @@ colouring for OpenMP threading and the provision of loop bounds that the
 generated PSy layer will use.
 
 \begin{figure}
-\centering\includegraphics[width=0.8\linewidth]{infrastructure_objects.pdf}
-\caption{\label{fig:objects} Schematic diagram of the family of objects used
-in the LFRic infrastructure to support the field object}
+\centering\includegraphics[width=0.8\linewidth]{FieldClass.pdf}
+\caption{\label{fig:objects} A Unified Modelling Language (UML) 
+class diagram of the family of objects used
+in the LFRic infrastructure to support the field object.}
 \end{figure}
 
 Within the development of LFRic there has been a conscious effort to
@@ -636,15 +637,12 @@ ownership of that data, and therefore, halo swapping more complex.
 
 \end{enumerate}
 
-The halo exchanges are achieved by passing information between processes
-using MPI. For performance and ease of use reasons, the MPI library is
-not called directly, instead a wrapper is used. 
-\textcolor{red}{(Comment: Is "wrapper" the correct term to use? It maybe 
-does enough to be considered a communication library in its own right.)}
-At initialisation time,
-the wrapper library pre-generates the communication routing tables
-required to perform a halo exchange, which are then reused every time a
-halo exchange is required.
+The halo exchanges are achieved by passing information between processes 
+using MPI. For performance and ease of use reasons, the MPI library is not 
+called directly, instead a layer between the model and MPI is introduced. 
+At initialisation time, the layer is responsible for pre-generating the 
+communication routing tables required to perform a halo exchange, which 
+are then reused every time a halo exchange is required.
 
 In order to generate the routing table, each rank needs to supply the
 following information to the library:
@@ -671,7 +669,7 @@ intermediate layer. A switch was made to use the YAXT (Yet Another
 eXchange Tool)~\cite{YAXTDocs} library. This provides
 halo exchanges during time stepping that are as fast as those provided
 by ESMF, but the time taken to initialise the routing tables is much
-shorter. \textcolor{red}{(Comment: Reference to support this conclusion?)}
+shorter.
 
 The API for supporting distributed memory optimisation is very simple. A
 halo exchange function is provided on every field and a flag is
@@ -680,8 +678,8 @@ cells is up to date with the owner of that data (`clean' halos) or
 whether a parallel computation has updated the field on the owning
 partition and the local halos are out of date (`dirty' halos). When the
 PSy layer determines that a halo exchange may be required, it first
-checks the state of the halos and if \textcolor{red}{(and only if)} they are `dirty' it calls the halo
-exchange functionality.
+checks the state of the halos and if (and only if) they are `dirty' it 
+calls the halo exchange functionality.
 
 \subsection{\label{sec:sub:sharedmem}Shared Memory Optimisation}
 
