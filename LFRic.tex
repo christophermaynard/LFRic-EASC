@@ -80,7 +80,7 @@ grid is inherent in the data structures of the UM.
 The software architecture of the core natural science code imposes a
 {\em separation of concerns} between science code and code relating to
 parallelisation of the model. The architecture is called PSyKAl (see
-figure~\ref{fig:psykal}) after the three layers it comprises: Parallel
+Figure~\ref{fig:psykal}) after the three layers it comprises: Parallel
 Systems or PSy layer code, Kernel code and Algorithm code. The
 algorithm code is the top layer and is written to operate on full
 model fields that represent data over the whole domain of a global or
@@ -126,7 +126,7 @@ is discussed in Section~\ref{sec:lib}. PSyclone, the code generator is
 presented in Section~\ref{sec:psyclone} and the package developed to
 apply linear solvers and preconditioners is presented in Section~\ref{sec:Solver}.
 Finally a scaling analysis is presented in Section~\ref{sec:scal} and
-conclusions drawn in section~\ref{sec:con}.
+conclusions drawn in Section~\ref{sec:con}.
 
 
 \section{\label{sec:GH}GungHo}
@@ -1113,7 +1113,7 @@ couplings which arise on the coarsest level.
 The key performance metric for
 LFRic and GungHo is scalability. The use of an unstructured mesh of
 GungHo and the solver construction described in
-section~\ref{sec:Solver} should enable the LFRic model to scale to a
+Section~\ref{sec:Solver} should enable the LFRic model to scale to a
 very large degree of parallelism. However, compiling some of the
 Fortran 2003 OO constructs necessary to build such a solver
 infrastructure is a challenging task for most compilers which has
