@@ -1091,18 +1091,14 @@ Fortran 2003 OO constructs necessary to build such a solver
 infrastructure is a challenging task for most compilers which has
 delayed implementing such a solver. This remains a work in progress.
 
-The February release of LFRic, named Dromedary, contains a simpler,
-Helmholtz pressure solver with a naive(?) preconditioner. Shown in
-figure~\ref{fig:scale_PE} is the parallel efficiency of the LFRic
-time-step for a very hight resolution model run. The Mesh is a $C1944$
-cubed-sphere with 30 levels, where each panel has $1944^2$ cells. This
-roughly corresponds to a 5km resolution. The science configuration is
-the baroclinic wave test with a 75 second timestep. The code was
-compiled to production level (\verb+ -O3+) with the Intel17
-compiler. The model was run in hybrid mode with both MPI and OpenMP on
-the Met Office Cray XC40. Each node comprises of dual socket Intel
-Xeon (Broadwell) 18-core processors. The affinity was set to be three
-MPI ranks per socket with six OpenMP threads per MPI rank. 
+The February release of LFRic, named Dromedary, contains a simpler
+solver. This employs a Krylov iterative algorithm, GCR on the mixed
+system of velocity, potential temperature, density, exner
+pressure. This is preconditioned by an approximate Schur complement
+for the exner pressure which uses lumped mass matrices. The pressure
+(Helmholtz) system is solved with bicgstab and preconditioned by a
+vertical only tridiagonal solver. Both mixed and helmholtz solvers use
+a relative tolerance of $10^-6$.
 
 \begin{figure}
   \begin{center}
@@ -1112,6 +1108,19 @@ MPI ranks per socket with six OpenMP threads per MPI rank.
       logarithmic scale}
   \end{center}
 \end{figure}
+
+Shown in figure~\ref{fig:scale_PE} is 
+the parallel efficiency of the LFRic time-step for a very hight 
+resolution model run. The Mesh is a $C1944$ cubed-sphere with 30 
+levels, where each panel has $1944^2$ cells. This roughly corresponds 
+to a 5km resolution. The science configuration is the baroclinic wave 
+test~\cite{qj.2241} with a 75 second time-step. The code was compiled 
+to production level (\verb+ -O3+) with the Intel17 compiler. The model 
+was run in hybrid mode with both MPI and OpenMP on the Met Office Cray 
+XC40. Each node comprises of dual socket Intel Xeon (Broadwell) 
+18-core processors. The affinity was set to be three MPI ranks per 
+socket with six OpenMP threads per MPI rank. 
+
 
 \begin{figure}
   \begin{center}
