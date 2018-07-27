@@ -37,7 +37,7 @@
 
 
 \address[met]{Met Office, FitzRoy Road, Exeter, EX1 3PB}
-\address[hartree]{Hartree Centre, STFC Daresbury, Grim up North}
+\address[hartree]{STFC Hartree Centre, Daresbury Laboratory, UK}
 \address[read]{Department of Computer Science, Polly Vacher Building,
   University of Reading, Reading, UK, RG6 6AY}
 \address[bath]{Department of Mathematics, University of Bath, Bath}
@@ -161,7 +161,7 @@ appropriate numerical method to avoid errors being dominated by the
 corners.
 %
 \begin{figure}
-\centering\includegraphics[width=0.6\linewidth]{Cubed-Sphere.png}
+\centering\includegraphics[width=0.6\linewidth]{Fig1_Cubed_Sphere.png}
 \caption{\label{fig:cubed-sphere} Equi-angular cubed-sphere mesh as
 used in GungHo with $12x12$ subdivisions per face, 
 referred to as a $C12$ mesh. This gives $864$ columns of cells.}
@@ -235,10 +235,10 @@ for these spaces are shown in Figure~\ref{fig:fem-spaces}.
 %
 \begin{figure}
 \centering
-\subfloat[]{\includegraphics[width=0.5\linewidth]{W0_dofs.pdf}}%
-\subfloat[]{\includegraphics[width=0.5\linewidth]{W1_dofs.pdf}}\\
-\subfloat[]{\includegraphics[width=0.5\linewidth]{W2_dofs.pdf}}%
-\subfloat[]{\includegraphics[width=0.5\linewidth]{W3_dofs.pdf}}%
+\subfloat[]{\includegraphics[width=0.5\linewidth]{Fig2a_W0_dofs.pdf}}%
+\subfloat[]{\includegraphics[width=0.5\linewidth]{Fig2b_W1_dofs.pdf}}\\
+\subfloat[]{\includegraphics[width=0.5\linewidth]{Fig2c_W2_dofs.pdf}}%
+\subfloat[]{\includegraphics[width=0.5\linewidth]{Fig2d_W3_dofs.pdf}}%
 \caption{\label{fig:fem-spaces} Location of degrees of freedom at $p=0$ for 
 (a) $Q_{1}$, (b) $N_0$, (c) $RT_0$ and (d) $Q_0^D$ finite element spaces.
 Circles correspond to scalar degrees of freedom and triangles to vector degrees
@@ -395,7 +395,7 @@ layered software achitecture. The red arrows indicate the control flow
 through the different layers. 
 
 \begin{figure}
-\centering\includegraphics[width=0.8\linewidth]{PSyKAl.pdf}
+\centering\includegraphics[width=0.8\linewidth]{Fig3_PSyKAl.pdf}
 \caption{\label{fig:psykal} Schematic diagram of the PSyKAl layered
   architecture. A single model could be for example, the atmospheric
   model. The blue vertical line between the PSy layer and the
@@ -569,7 +569,7 @@ colouring for OpenMP threading and the provision of loop bounds that the
 generated PSy layer will use.
 
 \begin{figure}
-\centering\includegraphics[width=0.8\linewidth]{FieldClass.pdf}
+\centering\includegraphics[width=0.8\linewidth]{Fig4_FieldClass.pdf}
 \caption{\label{fig:objects} A Unified Modelling Language (UML) 
 class diagram of the family of objects used
 in the LFRic infrastructure to support the field object.}
@@ -803,7 +803,7 @@ the Fortran use statements) are parsed and the meta-data for each kernel
 extracted.
 
 \begin{figure}
-\centering\includegraphics[width=0.8\linewidth]{psyclone_flow.pdf}
+\centering\includegraphics[width=0.8\linewidth]{Fig5_psyclone_flow.pdf}
 \caption{\label{fig:psyclone-arch}Data flow within the PSyclone architecture.}
 \end{figure}
 
@@ -1018,9 +1018,9 @@ Fig.~\ref{fig:class_hierarchy}, left):
 \end{itemize}
 \begin{figure}
   \begin{center}
-    \includegraphics[width=0.45\linewidth]{class_hierarchy.pdf}
+    \includegraphics[width=0.45\linewidth]{Fig6a_class_hierarchy.pdf}
     \hfill
-    \includegraphics[width=0.45\linewidth]{class_concrete.pdf}
+    \includegraphics[width=0.45\linewidth]{Fig6b_class_concrete.pdf}
     \caption{Derived class hierarchy for solvers and preconditioners
       in LFRic (left) and concrete implementation for the linear
       system in implicit time-stepping (right).}
@@ -1130,7 +1130,7 @@ a relative tolerance of $10^{-6}$.
 
 \begin{figure}
   \begin{center}
-    \includegraphics[width=0.85\linewidth]{scale.eps}
+    \includegraphics[width=0.85\linewidth]{Fig7_scale.eps}
     \caption{\label{fig:scale_PE}Strong scaling of the parallel efficiency of the LFRic 
       time-steps compared to 216 nodes. {\em N.B.} The x-axis shows a
       logarithmic scale}
@@ -1170,8 +1170,8 @@ optimal.
 
 \begin{figure}
   \begin{center}
-    \subfloat[]{\includegraphics[width=0.75\linewidth]{strong_mv_T1.eps}}\\
-    \subfloat[]{\includegraphics[width=0.75\linewidth]{strong_mv_T6.eps}}
+    \subfloat[]{\includegraphics[width=0.75\linewidth]{Fig8a_strong_mv_T1.eps}}\\
+    \subfloat[]{\includegraphics[width=0.75\linewidth]{Fig8b_strong_mv_T6.eps}}
     \caption{\label{fig:OMP_scale}Scaling of the matrix-vector routine
       run-time in seconds for $100$ time-steps, with different numbers
       of nodes for a) $18$ MPI ranks per socket and b) $3$ MPI ranks
