@@ -1,1 +1,7 @@
-Willem Deconinck
+Willem Deconinck, ECMWF (willem.deconinck@ecmwf.int)
+Joachim Biercamp, DKRZ (biercamp@dkrz.de)
+Oliver Furher, MeteoSwiss (oliver.fuhrer@env.ethz.ch)
+John Michalakes, UCAR (michalak@ucar.edu)
+Simon McIntosh-Smith, University of Bristol (simonm@cs.bris.ac.uk)
+Jeffrey S. Vetter, Oak Ridge National Laboratory (vetter@computer.org)
+
