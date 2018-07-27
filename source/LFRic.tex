@@ -31,23 +31,23 @@
 \author[bath]{E.~H.~M\"{u}ller}
 \author[met]{S.~Mullerworth}
 \author[hartree]{A.~R.~Porter}
-\author[downunder]{M.~Rezny}
+\author[monash]{M.~Rezny}
 \author[met]{B.~J.~Shipway}
 \author[met]{R.~Wong}
 
 
-\address[met]{Met Office, FitzRoy Road, Exeter, EX1 3PB}
+\address[met]{Met Office, UK}
 \address[hartree]{STFC Hartree Centre, Daresbury Laboratory, UK}
 \address[read]{Department of Computer Science, Polly Vacher Building,
-  University of Reading, Reading, UK, RG6 6AY}
-\address[bath]{Department of Mathematics, University of Bath, Bath}
-\address[downunder]{Monash University, Melbourne, Australia}
+  University of Reading, UK}
+\address[bath]{Department of Mathematics, University of Bath, UK}
+\address[monash]{Monash University, Melbourne, Australia}
 
 \begin{abstract}
 \end{abstract}
 
 \begin{keyword}
-
+Separation of concerns; DSL; LFRic; PSyclone; Portability; Scalability; Weather and climate
 \end{keyword}
 
 \end{frontmatter}
@@ -496,7 +496,7 @@ generated Algorithm layer code},label={lst:invoke_56}]
 \end{lstlisting}
 
 Shown in listing~\ref{lst:PSy1} is a code fragment from the generated PSy layer for
-the invoke shown in listing~\ref{lst:invoke}.
+the invoke shown in Listing~\ref{lst:invoke}.
 
 \begin{lstlisting}[language=Fortran, numbers=left,caption={Code 
 fragment of the generated PSy layer},label={lst:PSy1}]
@@ -937,7 +937,7 @@ whole model.
 
 Applying the OpenMP script to the invoke call described in
 Section~\ref{sec:SoC} results in the following generated PSy layer
-code shown in listing~\ref{lst:PSy_omp}. 
+code shown in Listing~\ref{lst:PSy_omp}. 
 \begin{lstlisting}[language=Fortran, numbers=left,caption={Code 
 fragment of the generated PSy layer},label={lst:PSy_omp}]
   ! Look-up colour map
@@ -1221,6 +1221,13 @@ algorithm favours threading. Hence OpenMP is faster.
    \item more Science, still single source.
    \item {\em Huzzah}
 \end{itemize}
+
+\section*{Acknowledgements}
+The original designs for the computational infrastructure and the GungHo
+formulation arose from the GungHo project. The contribution of GungHo
+Consortium members as well as UM Partnership collaborators and GHASP team
+members is gratefully acknowledged. 
+
 \newpage
 
 \bibliography{mibib.bib}
