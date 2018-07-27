@@ -336,8 +336,7 @@ choices to exploit the architecture of different processors.
 This abstraction of a separation of concerns between mathematics code
 and machine code is powerful and enables both the portability of
 science code to different processor architectures and allows the
-application to exploit a significant\footnote{What constitutes good
-performance depends on a variety of factors.} fraction of the peak
+application to exploit a significant fraction of the peak
 performance of the processor. Whilst many science applications may
 contain code optimisations in performance critical sections (for
 example, blocking or tiling loop nests to better utilise cache memory),
@@ -369,11 +368,10 @@ cycles.
 Many applications have adopted an MPI + X model, where X is one or
 more of the programming models mentioned in the previous paragraph. This
 is problematic for several reasons. The programming models are not
-only different, they are different types of model. Languages, language
+only different, they are different types of model: languages, language
 extensions, libraries and directives, some of which are architecture
 specific. Worse, the interaction between them is outside the scope of
-any model\footnote{Whilst MPI has some level of threaded awareness,
-  this is limited.} and may, for example, require the batch scheduling
+any model and may, for example, require the batch scheduling
 system to control this. The applications may require a different X for
 different architectures and even different data layouts and
 loop nest order. All these parallel and performance features
@@ -472,9 +470,10 @@ procedure call from the algorithm layer.
 
 \begin{lstlisting}[language=Fortran,caption={Code fragment showing an
 invoke procedure from the Algorithm layer},label={lst:invoke}]
- call invoke(setval_c(v(m), 0.0_r_def), &
-             matrix_vector_kernel_type(v(m), s(m), mm), &
-             enforce_bc_kernel_type( v(m) ) )
+ call invoke( name = "gcr_apply_operator", &
+              setval_c(v(m), 0.0_r_def), &
+              matrix_vector_kernel_type(v(m), s(m), mm), &
+              enforce_bc_kernel_type( v(m) ) )
 \end{lstlisting}
 
 There are three kernels in this invoke. The first \verb+setval_c+ is
@@ -492,7 +491,7 @@ generated procedure in the PSy layer, with the fields and operators as
 arguments. This is shown below
 \begin{lstlisting}[language=Fortran,caption={Code fragment showing the
 generated Algorithm layer code},label={lst:invoke_56}]
- CALL invoke_56(v(m), s(m), mm)
+ CALL invoke_gcr_apply_operator(v(m), s(m), mm)
 \end{lstlisting}
 
 Shown in listing~\ref{lst:PSy1} is a code fragment from the generated PSy layer for
@@ -516,13 +515,10 @@ fragment of the generated PSy layer},label={lst:PSy1}]
   CALL v_proxy%set_dirty()
   CALL v_proxy%halo_exchange(depth=1)
 \end{lstlisting}
-Lines 1-20 are the calls to the LFRic infrastructure to extract
-sizes, loop counters, and the indirection maps for the unstructured
-mesh. Lines 24-26 are the built-in function generated in place in the
-PSy layer for a point-wise operation. Lines 30-36 are the distributed
+Lines 1-5 are the distributed
 memory calls to the infrastructure for a halo exchange and
 testing/setting flags to indicate whether a halo (and to what depth)
-has been updated. Lines 38-45 are the looping over the horizontal mesh
+has been updated. Lines 6-13 are the looping over the horizontal mesh
 and the procedure call to the kernel itself. The arguments are simple
 scalars for sizes and loop counters, the data arrays and (in this example)
 the indirection maps. 
@@ -807,7 +803,7 @@ extracted.
 \caption{\label{fig:psyclone-arch}Data flow within the PSyclone architecture.}
 \end{figure}
 
-PSyclone must then perform two tasks: firstly, generate an internal
+PSyclone must then perform two tasks. Firstly, generate an internal
 representation, known as a {\em schedule}, of a PSy layer routine for each invoke in
 the Algorithm. If distributed memory is specified then this schedule
 must include appropriate halo exchanges and global sums to ensure
@@ -1115,12 +1111,12 @@ LFRic and GungHo is scalability. The use of an unstructured mesh of
 GungHo and the solver construction described in
 Section~\ref{sec:Solver} should enable the LFRic model to scale to a
 very large degree of parallelism. However, compiling some of the
-Fortran 2003 OO constructs necessary to build such a solver
+Fortran 2003 object-orientated constructs necessary to build such a solver
 infrastructure is a challenging task for most compilers which has
 delayed implementing such a solver. This remains a work in progress.
 
-The February release of LFRic, named Dromedary, contains a simpler
-solver. This employs a Krylov iterative algorithm, GCR on the mixed
+The February 2018 release of LFRic contains a simpler
+solver. This employs a Krylov iterative GCR algorithm on the mixed
 system of velocity, potential temperature, density, exner
 pressure. This is preconditioned by an approximate Schur complement
 for the exner pressure which uses lumped mass matrices. The pressure
@@ -1143,7 +1139,7 @@ resolution model run. The mesh is a $C1944$ cubed-sphere with 30
 levels, where each panel has $1944 \times 1944$ cells. This roughly corresponds 
 to a 5km global resolution. The science configuration is the baroclinic wave 
 test~\cite{qj.2241} with a 75 second time-step. The code was compiled 
-to production level (\verb+ -O3+) with the Intel17 compiler. The model 
+to production level (\verb+-O3+) with the Intel17 compiler. The model 
 was run in hybrid mode with both MPI and OpenMP on the Met Office Cray 
 XC40. Each node comprises of dual socket Intel Xeon (Broadwell) 
 18-core processors. The affinity was set to be three MPI ranks per 
@@ -1155,18 +1151,17 @@ scale to just below $70\%$ compared to $216$ nodes. Here, the local
 volume has been reduced to $12\times 12$ with only $30$ levels that is
 only $4320$ dofs per unit of parallelism for the pressure space. The
 ratio of communication to computation cost will become worse if the
-problem is scaled further. Moreover, the number of iterations for the
+problem is scaled further. The number of iterations for the
 solver is relatively large and with multiple solves per time-step and
-five global sums per iteration of the BiCGStab algorithm, means the
-cost global sum becomes prohibitive.
+five global sums per iteration of the BiCGStab algorithm, the
+cost of the global sums becomes prohibitive.
 
 The new solver implementation will enable better scaling by reducing
 the number of Krylov solver iterations required by using a much more
-efficient preconditioner. This will also reduce the absolute
-performance, {\em i.e.} run-time. Further improvemnents are then
-planned for computational optimisation once the solver is closer to
-being algorithmically
-optimal.
+efficient preconditioner. This will also improve the absolute
+performance, {\em i.e.} reduce run-time. Until the solver is closer to
+being algorithmically optimal it does not make sense to apply further
+computational optimisations.
 
 \begin{figure}
   \begin{center}
@@ -1197,9 +1192,9 @@ comnuication that would otherwise be required to correctly calculate
 the contribution of neighbour cells to that dof. Comparing MPI only to
 the hybrid mode, each processor in the former regime has more work to
 do in the case of redundant computation from the scaling of volume to
-surface area. Hybrid mode has less cells to redundantly compute than
+surface area. Hybrid mode has fewer cells to redundantly compute than
 MPI only. Choosing redundant computation as a communication reduction
-algorithm favours threading. Hence OpenMP is faster.
+algorithm favours threading; hence OpenMP is faster.
  
 
 \section{Conclusion}
