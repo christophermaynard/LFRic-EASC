@@ -650,11 +650,10 @@ section of the domain.
 
 Performing halo exchanges is not unique to LFRic. Running large parallel
 weather and climate model codes has been done for many years, using
-halo exchanges as a
-method of providing communication between partitions. The LFRic
-infrastructure has a data model \textcolor{red}{with significant differences to previous
-models} which will affect the way distributed memory parallelism is
-implemented:
+halo exchanges as a method of providing communication between partitions.
+However, the following aspects of the data model within the LFRic 
+infrastructure make implementing distributed memory parallelism using 
+halo exchanges particularly challenging:
 
 \begin{enumerate}
 
@@ -1248,14 +1247,51 @@ algorithm favours threading; hence OpenMP is faster.
 
 \section{Discussion and Conclusion}
 
-The paper describes the novel features of the design of the new LFRic
-model and infrastructure, and the GungHo dynamical core within it. In
-short, the design has been developed and deployed successfully so
-far. The GungHo dynamical core is routinely run in a range of
-configurations. After initially being run in serial for many months
-while the first version of PSyclone was developed, the introduction of
-PSyclone enabled it to be run in parallel (both MPI and OpenMP) on
-220,000 cores of a Cray XC40 within less than two weeks.
+This paper describes the novel features of the design of the new LFRic
+model and infrastructure, and the GungHo dynamical core within it. The
+challenges of GungHo's higher order FEM approach on an unstructured
+mesh essentially resulted in a requirement to develop a new
+infrastructure from scratch. This requirement provided an opportunity
+to develop a Domain Specific Language approach with the aim of
+encapsulating all platform specific parallel deployment requirements
+within metadata. This metadata was then parsed by a DSL
+compiler called PSyclone to automatically generate the OpenMP and MPI
+parallel code required to deploy the application on an HPC machine.
+
+The approach contrasts with other work seeking to make
+weather and climate models exascale ready in that most other works
+are not writing models from scratch but instead either accommodating
+existing models in new frameworks or making significant changes to
+existing models, or both of the above. DSLs feature heavily in other
+approaches but are usually only part of the solution. For example,
+MeteoSwiss have ported the COSMO model to run on GPUs, by
+rewriting the dynamical core code using a DSL (STELLA). Other parts
+of the code (e.g. physics) have been instrumented with compiler
+directives~\cite{JSFI17}. CSCS (the Swiss National  Supercomputing
+Centre) have made significant progress in porting the ICON dynamical
+core to run on GPUs by instrumentation with OpenACC directives and
+several physics schemes have been ported using a combination of
+OpenACC and the CLAW source to source translation tool. To further
+this effort, the ENIAC (ENable Icon on a heterogeneous ArChitecture)
+project seeks to make the ICON model exascale ready using a similar
+strategy of tools (the GridTools DSL and the CLAW source to source
+translator) and OpenACC directives~\cite{ENIACDocs}.
+The E3SM (Energy Exascale Earth System Model) project (a collaboration
+between 7 National US laboratories)~\cite{E3SMDocs} has ported
+HOMME (the dynamics/transport component of the Community Earth System
+Model) to a single source version (HOMMEXX) able to run on MIC,
+CPU and GPU architectures using Kokkos. Kokkos is a library that
+implements a programming model in C++ for writing performance
+portable applications by providing template abstractions for parallel
+code~\cite{KokkosGitHub}.
+
+In short, the design of LFRic has been developed and deployed
+successfully so far. The GungHo dynamical core is routinely run in a
+range of configurations. After initially being run in serial for many
+months while the first version of PSyclone was developed, the
+introduction of PSyclone enabled it to be run in parallel (both MPI
+and OpenMP) on 220,000 cores of the Met Office Cray XC40 within less
+than two weeks.
 
 Several scientists are currently developing code within the
 system. For the most part, scientists develop algorithms and kernels
