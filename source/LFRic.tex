@@ -56,38 +56,86 @@ Separation of concerns; Domain specific language; Exascale; Numerical weather pr
 \newpage
 \section{\label{sec:intro}Introduction}
 
-In common with many science applications, weather and climate models are 
-facing a disruption change with the push to Exascale computing. However, the
-difficulty in porting and optimising legacy codes to new hardware is
-particularly acute for this domain as the software is large ($O(10^6)$
-lines of code), takes a long time to develop (a decade or more for a new
-dynamical core) and is long-lived (typically quarter of a century or longer).
-These timescales are much longer than the changes in both processor
-architectures and programming models necessary to exploit these
-architectures~\cite{gmd-2017-186}.
+The Met Office develops and maintains a large suite of numerical
+models that underpins its operational weather and climate research
+work. At its heart is the Unified Model (UM) of the atmosphere
+developed in the late 1980s and introduced into operational use in
+1990~\cite{gmd-10-1487-2017}. Since its inception there has been a
+continuous drive to increase the complexity, accuracy and compute
+performance of the UM so as to deliver the Met Office's purpose which
+is to work at the forefront of weather and climate science for
+protection, prosperity and well-being.
 
-In collaboration with academic partners, the Met Office is developing
-a new dynamical core, called GungHo~\cite{melvin2018}. By employing a
-mixed Finite Element Method (hereafter FEM) on an unstructured mesh, the new dynamical
-core is designed to maintain the scientific accuracy of the current finite difference
-Unified Model (UM) dynamical core (ENDGame~\cite{QJ:QJ2235}), whilst
-allowing improved scalability by avoiding polar singularities of the
-latitude-longitude (lat-lon) grid. A new atmospheric model and software infrastructure,
-named LFRic after Lewis Fry Richardson, is being developed to host the
-GungHo dynamical core, as the structured,  lat-lon
-grid is inherent in the data structures of the UM.
+In continuing to deliver its purpose over the next several decades,
+four challenges were anticipated.
 
-The software architecture of the core natural science code imposes a
-{\em separation of concerns} between science code and code relating to
-parallelisation of the model. The architecture is called PSyKAl (see
-Figure~\ref{fig:psykal}) after the three layers it comprises: Parallel
-Systems or PSy layer code, Kernel code and Algorithm code. The
-algorithm code is the top layer and is written to operate on full
-model fields that represent data over the whole domain of a global or
-limited area model. At the bottom, kernel code operates on small
-chunks of the whole field such as a single vertical column of data. In
-between, PSy layer code breaks fields down into chunks and passes each
-of the chunks in turn to the kernels.
+Firstly, for many years much of the improvement in compute performance
+of the UM could be obtained by buying high performance computers with
+ever more cores. However, clock speeds of new iterations of standard
+CPUs are now often slower than the old, requiring ever more CPUs to be
+used; scaling to more CPUs is limited by interprocessor
+communications; and the costs of powering machines with higher core
+counts is becoming ever more expensive. All these factors challenge
+the ability to deliver higher resolution and more complex numerical
+models~\cite{gmd-2017-186}.
+
+Secondly, a particular challenge for many atmosphere models, including
+the UM, relates to their use of the latitude-longitude (lat-lon) grid.
+The convergence of longitude lines at the poles causes numerical
+issues that make it hard to scale the model to higher core counts.
+
+Thirdly, looking forward to the future, it is anticipated that HPC
+architectures will change radically, and that the diversity of
+architectures will increase. Even when porting from one CPU-based
+machine to another, there is a cost due to the need to re-tune the
+performance for the particular characteristics of the new
+machine. With the emergence of more diverse machines such as GPU-based
+machines, the cost will only get worse.
+
+In collaboration with academic partners, the Met Office reviewed the
+options available to resolve these three issues~\cite{GHP1_CSR}. The
+decision was to develop a new model, largely from scratch, comprising
+a new dynamical core written to run on an unstructured mesh that
+avoided the polar singularity problem; to develop a new infrastructure
+as the UM infrastructure will not support an unstructured mesh; and to
+design the infrastructure with a separation between scientific code
+and parallel systems code -- code that supports parallelism on HPC
+machines -- so as to reduce the cost and complexity of porting to new
+architectures. Furthermore, a strict API would be used so that it
+would be possible to auto-generate the parallel code. This paper
+describes the novel features of this new model.
+
+The new dynamical core is called GungHo~\cite{melvin2018}. An
+unstructured mesh is used whose cells are roughly equal area and which
+therefore avoid the issues caused by the polar singularities of the
+lat-lon grid. By employing a mixed Finite Element Method (hereafter
+FEM) on an unstructured mesh, the new dynamical core is designed to
+maintain the scientific accuracy of the current finite difference UM
+dynamical core (ENDGame~\cite{QJ:QJ2235}).
+
+LFRic is the name given to the new atmospheric model and underpinning
+software infrastructure which are being developed to host the GungHo
+dynamical core. LFRic is named after the pioneering weather forecaster
+Lewis Fry Richardson. When initiating LFRic, a fourth important issue
+was recognised: that while the proposed new design was novel and would
+require development of new software systems, it was also important to
+design a system that could use ``off the shelf'' solutions from
+elsewhere if possible. For this reason, the broad design of LFRic uses
+object-oriented design to modularise functionality and allow
+interfacing to external packages and libraries for certain functions
+such as IO and distributed memory communications.
+
+At the core of the LFRic design, the software architecture of the
+natural science code imposes a {\em separation of concerns} between
+science code and code relating to parallelisation of the model. The
+architecture is called PSyKAl (see Figure~\ref{fig:psykal}) after the
+three layers it comprises: Parallel Systems or PSy layer code, Kernel
+code and Algorithm code. The algorithm code is the top layer and is
+written to operate on full model fields that represent data over the
+whole domain of a global or limited area model. At the bottom, kernel
+code operates on small chunks of the whole field such as a single
+vertical column of data. In between, PSy layer code breaks fields down
+into chunks and passes each of the chunks in turn to the kernels.
 
 A strict API governs the implementation of the PSyKAl design,
 requiring scientists to embed metadata into kernels to describe their
@@ -1197,7 +1245,78 @@ MPI only. Choosing redundant computation as a communication reduction
 algorithm favours threading; hence OpenMP is faster.
  
 
-\section{Conclusion}
+\section{Discussion and Conclusion}
+
+The paper describes the novel features of the design of the new LFRic
+model and infrastructure, and the GungHo dynamical core within it. In
+short, the design has been developed and deployed successfully so
+far. The GungHo dynamical core is routinely run in a range of
+configurations. After initially being run in serial for many months
+while the first version of PSyclone was developed, the introduction of
+PSyclone enabled it to be run in parallel (both MPI and OpenMP) on
+220,000 cores of a Cray XC40 within less than two weeks.
+
+Several scientists are currently developing code within the
+system. For the most part, scientists develop algorithms and kernels
+within the existing infrastructure and with auto-generated PSy layer
+code. For some newer developments the PSy layer code is hand-written
+while new features are added to PSyclone. A clean separation between
+the science code and the PSy layer code has been maintained
+throughout. 
+
+The need for PSyclone and the LFRic infrastructure to continuously
+evolve in the light of new and changing science requirements
+underlines an important point: the ``separation of concerns'' that has
+enabled the science code to be kept isolated from the parallel systems
+code does not mean that scientists and engineers can work in
+isolation. In fact, the close ties between the scientists and software
+engineers has been a key part of the success of the approach.
+
+The compute performance of the dynamical core is promising. While
+significant improvements in the algorithmic design are required to
+deliver better throughput of the model, the application scales well to
+160,000 cores. One of the first improvements to the algorithmic
+performance is anticipated to come from application of the new solver
+API discussed in the paper.
+
+The design supports both MPI and OpenMP parallelism. The approach of
+computing results into the halo redundantly so as to reduce
+interprocessor communications helps the performance of deployments
+with more OpenMP threads per MPI rank (for a given total core count)
+because the larger domain of the high-thread runs means that the
+relative size of the halos, and therefore the relative amount of
+redundant computation, is smaller.
+
+The overall design has sought to carefully modularise functionality. A
+benefit of this is to enable trialling of different externally sourced
+libraries. A benefit of this approach was seen when it was decided to
+exchange the ESMF library for the YAXT library as the work was done in
+a short period of time.
+
+Development of the core LFRic infrastructure and PSyclone is still in
+early days. LFRic is currently written to support any order of finite
+element method on a range of different unstructured meshes. Should the
+GungHo science converge on a particular mesh or set of meshes, and on
+a particular FEM order it will likely be possible to refactor the
+underlying LFRic data model to support more efficient access to the
+data.
+
+Largely, PSyclone is used to apply MPI and OpenMP. However its
+features include the ability to add transformations that increase the
+amount of redundant computation so as to reduce the number of halo
+swaps, to re-order kernels and to loop-fuse kernels to provide a
+performance benefit. Work is also underway to support OpenACC
+transformations.
+
+As well as continuing the technical capabilities of LFRic, currently,
+sub-grid physics processes are being added to the GungHo dynamical
+core implementation of LFRic with a view to steadily building up to a
+fully-specified NWP model around 2020. Assuming the scientific and
+computational performance results are acceptable it will likely go
+head-to-head with the Met Office UM for 3-4 years while it is further
+enhanced and optimised, eventually replacing the Unified Model
+atmosphere at the core of the Met Office operations.
+
 \label{sec:con}
 \begin{itemize}
    \item It works! 
