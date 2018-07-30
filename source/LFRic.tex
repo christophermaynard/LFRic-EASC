@@ -452,7 +452,7 @@ through the different layers.
 The APIs between the layers are tightly controlled. The PSy layer can
 only be called from the algorithm layer by an {\em invoke} procedure
 call. The permitted arguments to these invoke procedures are restricted
-to be the kernels and the fields that the kernels will operate on. The
+set of LFRic objects, such as fields, that the kernels will operate on. The
 kernels can only be called from the PSy layer with the unpacked data
 arrays, scalars for loop bounds and supporting arrays of both reals
 and integers for the Finite Element Method over the horizontally unstructured mesh.
@@ -542,8 +542,8 @@ generated Algorithm layer code},label={lst:invoke_56}]
  CALL invoke_gcr_apply_operator(v(m), s(m), mm)
 \end{lstlisting}
 
-Shown in listing~\ref{lst:PSy1} is a code fragment from the generated PSy layer for
-the invoke shown in Listing~\ref{lst:invoke}.
+Shown in Listing~\ref{lst:PSy1} is a code fragment from the generated PSy layer for
+the call to the matrix--vector kernel in invoke shown in Listing~\ref{lst:invoke}.
 
 \begin{lstlisting}[language=Fortran, numbers=left,caption={Code 
 fragment of the generated PSy layer},label={lst:PSy1}]
@@ -652,8 +652,8 @@ Performing halo exchanges is not unique to LFRic. Running large parallel
 weather and climate model codes has been done for many years, using
 halo exchanges as a
 method of providing communication between partitions. The LFRic
-infrastructure has a data model with significant differences to previous
-models which will affect the way distributed memory parallelism is
+infrastructure has a data model \textcolor{red}{with significant differences to previous
+models} which will affect the way distributed memory parallelism is
 implemented:
 
 \begin{enumerate}
@@ -798,7 +798,7 @@ file format are defined by an XML file which hides a lot of complexity from the 
 
 Prior to 2016, XIOS only supported read and write of NetCDF file formats that follow the CF
 conventions.  As previously explained in Section~\ref{sec:GH}, the LFRic implementation uses
-semi-structured meshes and a FEM formulation, where variables are held on
+\textcolor{red}{semi-structured meshes} and a FEM formulation, where variables are held on
 different elements of the mesh (vertices, edges or faces). Therefore, the I/O system needs to
 handle data structured in this way. The UGRID-NetCDF format has been chosen as the main
 LFRic input mesh format and also output format for diagnostics and model dumps~\cite{UgridSpec}.
