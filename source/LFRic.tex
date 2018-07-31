@@ -44,6 +44,24 @@
 \address[monash]{Monash University, Melbourne, Australia}
 
 \begin{abstract}
+
+  The paper describes the LFRic atmosphere model being developed by
+  the Met Office to replace the Unified Model for its climate and
+  weather operations during the 2020s. LFRic uses the GungHo dynamical
+  core and runs on a semi-unstructured cubed-sphere mesh. The design
+  follows object oriented principles to modularise functionality and
+  better benefit from externally obtained packages where possible. In
+  particular the design imposes a separation of concerns between the
+  science code and parallel code to promote performance
+  portability. An application called PSyclone, developed at the STFC
+  Hartree centre can generate the parallel code enabling efficient
+  deployment of a single science code onto different hardware. The
+  paper provides an overview of the scientific requirement, the design
+  of the LFRic software infrastructure, the operation of the PSyclone
+  code generator, and experiences of writing and deploying the new
+  model. Preliminary compute performance results of the GungHo
+  dynamical core are described.
+
 \end{abstract}
 
 \begin{keyword}
@@ -106,7 +124,7 @@ would be possible to auto-generate the parallel code. This paper
 describes the novel features of this new model.
 
 The new dynamical core is called GungHo~\cite{melvin2018}. An
-unstructured mesh is used whose cells are roughly equal area and which
+unstructured mesh can be used whose cells are roughly equal area and which
 therefore avoid the issues caused by the polar singularities of the
 lat-lon grid. By employing a mixed Finite Element Method (hereafter
 FEM) on an unstructured mesh, the new dynamical core is designed to
@@ -123,7 +141,7 @@ design a system that could use ``off the shelf'' solutions from
 elsewhere if possible. For this reason, the broad design of LFRic uses
 object-oriented design to modularise functionality and allow
 interfacing to external packages and libraries for certain functions
-such as IO and distributed memory communications.
+such as I/O and distributed memory communications.
 
 At the core of the LFRic design, the software architecture of the
 natural science code imposes a {\em separation of concerns} between
@@ -193,8 +211,8 @@ dynamical core in the UM. The GungHo model seeks to replicate the
 accuracy and stability of ENDGame whilst replacing the regular lat-lon
 grid with a quasi-uniform grid and so avoid the problems associated
 with the polar singularities in ENDGame, resulting from the
-convergence of meridians at the poles. The mesh used in GungHo is an
-equi-angular cubed-sphere, shown in Figure~\ref{fig:cubed-sphere}.
+convergence of meridians at the poles. The mesh used to develop GungHo
+within LFRic is an equi-angular cubed-sphere, shown in Figure~\ref{fig:cubed-sphere}.
 This has the benefit of near uniform resolution across the globe and a
 maximum/minimum edge length of $\approx 1.3$ achieved by using only
 quadrilateral cells.  However, this quasi-uniform mesh comes at the
@@ -320,7 +338,7 @@ term. This only requires a local computation and the stencil is fixed, reducing 
 amount of computation needed. However, in order to obtain a stable scheme it is 
 wrapped in a multi-stage evaluation, meaning that the advection update needs to be 
 computed a number of times per iteration of the iterative-semi-implicit scheme
-(see Subsection~\ref{sec:sub:timestepping}), nominally 3 stages are used. 
+(see Section~\ref{sec:sub:timestepping}), nominally 3 stages are used. 
 Future work will evaluate the use of flux-form Semi-Lagrangian scheme (COSMIC)~\cite{Leonard1996} 
 to replace the current scheme. This carries many of the 
 benefits of the semi-Lagrangian scheme used in ENDGame but without the 
@@ -373,20 +391,20 @@ An overview of the time-step is given in Table~\ref{tab:timestep}.
 \section{\label{sec:SoC}Separation of Concerns}
 Science applications in general and weather and climate codes in
 particular are written in high-level languages such as Fortran or
-C/C++. Indeed, Fortran is commonly employed for weather and climate
+C/C++. Fortran is commonly employed for weather and climate
 codes and can be considered a Domain Specific Language (DSL) for
 numerical computation. Using such a high-level language, an
 algorithm is written to solve a mathematical problem without
 consideration for the processor architecture. The compiler generates
-machine specific instructions and can, in principle, make optimisation
+machine-specific instructions and can, in principle, make optimisation
 choices to exploit the architecture of different processors.
 
 This abstraction of a separation of concerns between mathematics code
-and machine code is powerful and enables both the portability of
-science code to different processor architectures and allows the
+and machine code is powerful. It enables the portability of
+science code to different processor architectures, and allows the
 application to exploit a significant fraction of the peak
 performance of the processor. Whilst many science applications may
-contain code optimisations in performance critical sections (for
+contain code optimisations in performance-critical sections (for
 example, blocking or tiling loop nests to better utilise cache memory),
 in general these applications have relied on clock
 speed increases between processor generations to increase performance.
@@ -396,11 +414,11 @@ ago due to the absence of Dennard scaling~\cite{dennard}. Instead,
 successive generations of processors have had increasing numbers of processor cores per
 socket. Science applications typically have already been adapted to run on multiple
 nodes to exploit supercomputers with the distributed memory and data parallelism
-typically expressed over MPI. However, multi-core nodes present
-additional challenges and heterogenous compute nodes such as
-CPU + GPU with distinct memory spaces require additional programming
-models. Moreover, the algorithms employed combined with data
-parallelism may not be sufficient to exploit this explosion of parallelism.
+typically expressed over MPI. Multi-core nodes present
+additional opportunities and challenges to applications in terms of exploitation of
+shared address space within a node. Heterogenous compute nodes such as
+CPU + GPU with distinct memory spaces require further additional programming
+models to enable proper exploitation of the available compute performance.
 
 A great number of programming models exist. For distributed memory there are, 
 for instance, MPI and Partitioned Global Address Space (PGAS) languages, such 
@@ -408,8 +426,8 @@ as Co Array Fortran, Unified Parallel C, Chapel and GASPI. For threaded and
 shared-memory parallelism there are directive-based solutions such as OpenMP 
 and OpenACC as well as languages such as CUDA and OpenCL. However,
 the programming models lag behind in development of the rapidly evolving computer
-architectures and particular models lack feature or processor coverage
-making the choice of programming model difficult. This is ambiguity is
+architectures. Particular models lack feature or processor coverage
+making the choice of programming model difficult. These issues are
 especially difficult for weather and climate applications with their long development
 cycles. 
 
@@ -419,12 +437,12 @@ is problematic for several reasons. The programming models are not
 only different, they are different types of model: languages, language
 extensions, libraries and directives, some of which are architecture
 specific. Worse, the interaction between them is outside the scope of
-any model and may, for example, require the batch scheduling
-system to control this. The applications may require a different X for
+any model and may, for example, depend on control by the batch scheduling
+system. The applications may require a different X for
 different architectures and even different data layouts and
 loop nest order. All these parallel and performance features
 break the data abstraction of the separation of concerns between the
-maths/science code and architecture specific code.
+maths/science code and architecture-specific code.
 
 The design for the LFRic model is based upon a computational science
 report from Phase 1 of the GungHo project~\cite{GHP1_CSR}. By
@@ -433,12 +451,12 @@ can be kept separate from the science code. As outlined in
 Section~\ref{sec:intro}, the software is separated into three layers.
 Algorithms are expressed as operations on global, data-parallel field objects,
 in the top algorithm layer. The middle PSy layer (Section~\ref{sec:intro}) 
-contains the horizontal looping and is where the data parallelism is expressed. 
-The bottom layer is comprised of the kernels which encode the operation invoked in the
-algorithm layer. These are chosen to operate on a single column of data. 
+contains the looping over the horizontal field and is where the data parallelism is expressed. 
+The bottom layer comprises the kernels which encode the operation invoked in the
+algorithm layer. Kernels are written to operate on a single vertical column of data. 
 Shown in Figure~\ref{fig:psykal} is a schematic diagram of this
 layered software achitecture. The red arrows indicate the control flow
-through the different layers. 
+through the different layers.
 
 \begin{figure}
 \centering\includegraphics[width=0.8\linewidth]{Fig3_PSyKAl.pdf}
@@ -450,35 +468,36 @@ through the different layers.
 \end{figure}
 
 The APIs between the layers are tightly controlled. The PSy layer can
-only be called from the algorithm layer by an {\em invoke} procedure
-call. The permitted arguments to these invoke procedures are restricted
+be called only from the algorithm layer by an {\em invoke} procedure
+call. The permitted arguments to these invoke procedures are a restricted
 set of LFRic objects, such as fields, that the kernels will operate on. The
-kernels can only be called from the PSy layer with the unpacked data
-arrays, scalars for loop bounds and supporting arrays of both reals
-and integers for the Finite Element Method over the horizontally unstructured mesh.
-These coding rules are enforced by using Fortran 2003 object
-orientation coding style to control the APIs. By restricting the
+kernels can be called only from the PSy layer. The PSy layer code
+unpacks information from the LFRic objects including data
+arrays, scalars for loop bounds, and supporting arrays of both reals
+and integers for the Finite Element Method.
+The API is enforced by using Fortran 2003 object
+orientation coding style. By restricting the
 domain of the problem from all numerical mathematics to only that
 required (in the first instance) in the GungHo dynamical core it is
 possible to constrain the parallelism to the PSy layer. Restoring
 the separation of concerns between the science code and the
 parallel/optimisation code means that in principle different programming
 models can be employed in the PSy layer without changing the science
-code. Moreover, the PSyKAl API can be thought of as a Domain Specific
+code. For this reason, the PSyKAl API can be thought of as a Domain Specific
 Embedded Language (DSEL).
 
 Compilers in general have to be conservative about the assumptions
 they can make in order to guarantee correctness. However, a further
-advantage of the domain specific approach is that developers can
+advantage of the DSL approach is that developers can
 explicitly express the domain knowledge which is not possible in a
 standard, high level language. In the case of the LFRic model, data
 access descriptors are employed to say whether access to a field is
 {\em read}, {\em write}, {\em readwrite} or {\em increment}. The latter 
 two discriminate between fields that do not share degrees 
 of freedom between columns ({\em e.g.} density defined on 
-$Q_p^D$ function space, see Subsection~\ref{sec:sub:spatial} for more details) 
+$Q_p^D$ function space, see Section~\ref{sec:sub:spatial} for more details) 
 and the ones that do ({\em e.g.} velocity defined on $RT_0$ space, 
-Subsection~\ref{sec:sub:spatial}). This information is embedded in
+Section~\ref{sec:sub:spatial}). This information is embedded in
 Fortran as part of the kernel. Other information encoded in this way
 is the loop iterator (for example, the choice to loop over horizontal {\em cells}), whether the kernel
 operates on a field which lives on a specific function space, whether
@@ -488,10 +507,10 @@ whether the kernel uses any basis functions.
 The restricted domain, strict control of the APIs between layers and,
 critically, the data access descriptors and other kernel metadata
 allow the PSy layer to be constructed entirely according to a set of
-rules. The code itself can then be automatically generated. This is
-done by a Python code parser, transformer and code generator called
-PSyclone. More details of PSyclone itself can be found in
-Section~\ref{sec:psyclone}. The generated code is mostly Fortran.
+rules. The code itself can therefore be automatically generated, and 
+a Python code parser, transformer and code generator called
+PSyclone has been written to generate it. More details of PSyclone can be found in
+Section~\ref{sec:psyclone}. The generated code is Fortran.
 These are calls to the LFRic infrastructure (see Section~\ref{sec:lib} 
 for more details) which might contain the
 MPI distributed memory parallelism and infrastructure calls
@@ -499,20 +518,16 @@ to dereference the Fortran 2003 objects, looping over
 the horizontal mesh elements and calling the kernels
 themselves. However, PSyclone can also perform transformations and
 target other progamming models such as OpenMP or OpenACC. PSyclone is
-then in effect a Domain Specific Embedded compiler. PSyclone also does
-one other important code generation function; In the algorithm layer,
-the calls to the invoke procedure are replaced with a specific
-procedure call to the PSy layer. The PSy layer code can then be
-optimised depending on the kernels in the invoke and the metadata.
+then in effect a DSEL compiler.
 
 \subsection{\label{sec:sub:implement}Implementation}
 The algorithm layer code is written in Fortran 2003. However, this
-code is not actually compiled, it is parsed and processed by PSyclone
+code is not actually compiled; it is parsed and processed by PSyclone
 first. Most of the Fortran is left as written. The exception to this
 is the call to any {\em invoke} procedure. The invoke procedure does not 
 exist as such in the source code. Instead, an invoke means {\em execute these
 kernels looping over the chosen entities}, hence instructing PSyclone on how to 
-generate parallel code. PSyclone can paralellise this horizontal looping with MPI,
+generate parallel code. PSyclone can parallelise this horizontal looping with MPI,
 OpenMP or both. Shown in the code fragment below is an invoke
 procedure call from the algorithm layer.
 
@@ -528,7 +543,7 @@ There are three kernels in this invoke. The first \verb+setval_c+ is
 an example of a {\em point-wise} kernel. The same operation, setting all
 the values of the field to the same scalar, is applied to each dof so no 
 FEM structure is required. This is an example of a {\em built-in} operation 
-generated in place in the PSy layer by PSyclone. The second
+generated in-place in the PSy layer by PSyclone. The second
 kernel is written as a call to the constructor of the kernel type, so that it is
 valid Fortran. The arguments to this call \verb+v+ and \verb+s+ are
 {\em fields} and \verb+mm+ is an {\em operator}, in this case a mass
@@ -543,7 +558,7 @@ generated Algorithm layer code},label={lst:invoke_56}]
 \end{lstlisting}
 
 Shown in Listing~\ref{lst:PSy1} is a code fragment from the generated PSy layer for
-the call to the matrix--vector kernel in invoke shown in Listing~\ref{lst:invoke}.
+the call to the matrix-vector kernel in invoke shown in Listing~\ref{lst:invoke}.
 
 \begin{lstlisting}[language=Fortran, numbers=left,caption={Code 
 fragment of the generated PSy layer},label={lst:PSy1}]
@@ -593,11 +608,11 @@ The metadata is embedded in Fortran so that no special comments or
 other mark-up is required. The access descriptors shown above are key
 to deriving the appropriate rules for generating the code in the PSy
 layer. The \verb+arg_type+ has three components. Firstly, the type of
-the data object, in this case fields and operators\footnote{An
-  operator is a mapping between one function space and another.}. Secondly, what is
-the data acess pattern for this data object, {\em e.g.} \verb+GH_INC+ means the data is
+the data object, in this case fields and operators (an
+operator is a mapping between one function space and another). Secondly,
+the data access pattern for the data object. For example, \verb+GH_INC+ means the data is
 incremented. Thirdly, which function space the data lives on. In this case, the
-kernel is general and can operate over any space, hence, the
+kernel is general and can operate on any function space, hence, the
 \verb+any_space_n+. Whilst the $n$ can be any number, the function space of the
 first field must correspond to the first function space of the operator and the
 function space of second field must correspond to the second function
@@ -607,7 +622,7 @@ space of the operator.
 \section{\label{sec:lib}Infrastructure}
 
 As shown in Figure~\ref{fig:psykal}, the PSyKAl layered
-architecture is supported by the LFRic infrastructure. This provides
+architecture is supported by the LFRic infrastructure. The LFRic infrastructure provides
 functionality such as distributed memory support (halo exchanges),
 colouring for OpenMP threading and the provision of loop bounds that the
 generated PSy layer will use.
@@ -634,6 +649,12 @@ information in the vertical for just the part of the mesh that will be
 used on the local processing element to form a local, three-dimensional
 representation of the mesh. The way the data that is held within the
 field object relates to the mesh is described by the function space.
+
+Note that while most of the LFRic infrastructure supports a
+horizontally unstructured mesh, the partitioner is specialised to
+provide partitioning only of cubed-sphere and planar meshes. If a
+different mesh is required it is a relatively straightforward change
+to extend the partitioner to support it.
 
 Most of the infrastructure is accessed through the field object. So, for
 example if a halo exchange is required on a field, the halo exchange
@@ -665,9 +686,8 @@ shaped halo regions;
 data point to a horizontally adjacent data point requires using a lookup
 table, which is slower than using direct addressing. In order to recover
 some code performance, fields are laid out in memory so that vertically
-adjacent data points are next to each other, which means that, for
-optimisation reasons, the looping structure within LFRic is vertical
-looping innermost;
+adjacent data points are next to each other, and the looping structure
+within LFRic kernels is vertical looping innermost;
 
 \item LFRic supports a finite-element formulation which means that data
 are held as dofs on all the different
@@ -681,11 +701,12 @@ ownership of that data, and therefore, halo swapping more complex.
 The halo exchanges are achieved by passing information between processes 
 using MPI. For performance and ease of use reasons, the MPI library is not 
 called directly, instead a layer between the model and MPI is introduced. 
-At initialisation time, the layer is responsible for pre-generating the 
-communication routing tables required to perform a halo exchange, which 
+At initialisation time, the layer generates the 
+communication routeing tables required to perform a halo
+exchange. These tables  
 are then reused every time a halo exchange is required.
 
-In order to generate the routing table, each rank needs to supply the
+In order to generate the routeing table, each rank needs to supply the
 following information to the library:
 
 \begin{itemize}
@@ -699,8 +720,8 @@ following information to the library:
 Initially, the LFRic project used the infrastructure library component
 of the Earth System Modelling Framework (ESMF)~\cite{ESMFDocs} to
 provide the layer between the model and MPI, however it was not particularly
-well suited to the particular problem it was being used for. Although
-routing tables it generated were optimal (the halo exchanges called
+well-suited to the higher order finite-element fields used in LFRic. Although
+routeing tables it generated were optimal (the halo exchanges called
 during timestepping were very fast), the time to generate the tables
 became quite long when the model was run at scale. The design of the
 model framework to support the `separation of concerns' led to all the
@@ -709,7 +730,7 @@ This made it relatively easy to try a different library to provide the
 intermediate layer. A switch was made to use the YAXT (Yet Another
 eXchange Tool)~\cite{YAXTDocs} library. This provides
 halo exchanges during time stepping that are as fast as those provided
-by ESMF, but the time taken to initialise the routing tables is much
+by ESMF, but the time taken to initialise the routeing tables is much
 shorter.
 
 The API for supporting distributed memory optimisation is very simple. A
@@ -722,12 +743,19 @@ PSy layer determines that a halo exchange may be required, it first
 checks the state of the halos and if (and only if) they are `dirty' it 
 calls the halo exchange functionality.
 
+When the LFRic project was initiated, a survey of other models and
+systems found no other infrastructures or data models that would
+support the particular combination of higher order FEM methods and
+unstructured meshes. Since then, the ATLAS
+library~\cite{DECONINCK2017188} has emerged which in time may
+potentially be considered as an alternative data model capable of
+delivering LFRic requirements.
+
 \subsection{\label{sec:sub:sharedmem}Shared Memory Optimisation}
 
 As with all the parallelisation within LFRic, the shared memory
-parallelism is implemented within the PSy layer. The directives that
-control the shared memory parallelism are inserted into the PSy layer
-code. The finite element formulation makes use of data on mesh entities
+parallelism is implemented by inserting directives in the PSy layer. 
+The finite-element formulation makes use of data on mesh entities
 shared by more than one cell. Two different threads working on
 adjacent cells may try writing to a dof shared between the cells at the
 same time.
@@ -792,12 +820,13 @@ XIOS is written in C++, but also provides a Fortran API to developers. It makes 
 MPI-IO and the NetCDF4 and HDF5 libraries and handles unstructured and regular grids.
 XIOS is a client-server framework where I/O servers are asynchronous processes buffering
 output requests from client processes. XIOS also has sophisticated post-processing
-functionality - {\em e.g.} for regridding, time series, meaning. The output schedule and
+functionality - {\em e.g.} for regridding, and computing time series
+and time averages. The output schedule and
 file format are defined by an XML file which hides a lot of complexity from the user.
 
 Prior to 2016, XIOS only supported read and write of NetCDF file formats that follow the CF
 conventions.  As previously explained in Section~\ref{sec:GH}, the LFRic implementation uses
-\textcolor{red}{semi-structured meshes} and a FEM formulation, where variables are held on
+horizontally unstructured meshes and a FEM formulation, where variables are held on
 different elements of the mesh (vertices, edges or faces). Therefore, the I/O system needs to
 handle data structured in this way. The UGRID-NetCDF format has been chosen as the main
 LFRic input mesh format and also output format for diagnostics and model dumps~\cite{UgridSpec}.
@@ -823,17 +852,17 @@ found in~\cite{Adams2018} where preliminary results on I/O scalability (up to 13
 processors) and XIOS and Lustre performance tuning are presented. The conclusions of
 this work were that XIOS is an effective parallel I/O framework that was technically
 straightforward to integrate into the existing LFRic infrastructure via the XIOS
-Fortran interface. Scaling experiments showed that XIOS performance was scaleable with
+Fortran interface. Scaling experiments showed that XIOS performance was scalable with
 respect to increasing numbers of cores, even with minimal tuning.
 
 \section{\label{sec:psyclone}PSyclone}
 
 As discussed earlier, PSyclone~\cite{psyclone} is a domain-specific
-compiler which, given an Algorithm and associated Kernels, generates
+compiler which, given an algorithm and associated kernels, generates
 the code for the middle, PSy layer. Currently, each of these layers
 must be in Fortran and hence the compiler is embedded in
 Fortran. The choice of Fortran is motivated in Section~\ref{sec:SoC}. However, there is
-nothing in the approach to prevent other languages being targetted in
+nothing in the approach to prevent other languages being targeted in
 future. PSyclone itself is written in Python.
 
 Figure~\ref{fig:psyclone-arch} shows the data flow within the PSyclone
@@ -882,7 +911,7 @@ Fortran code.  The steps involved in generating a vanilla
   \end{enumerate}
 \end{enumerate}
 
-Since the Algorithm deals with global objects
+Since the algorithm deals with global objects
 (fields, operators {\em etc.})  and a kernel deals with {\em e.g.} individual
 columns of cells (see {\em e.g.} Section~\ref{sec:intro}), 
 the PSy layer must also account for the fact that
@@ -940,7 +969,7 @@ compilation phase of a potentially large application. Therefore,
 PSyclone allows (Python) transformation scripts to be supplied
 on the command line. For example, to add OpenMP to the PSy layer,
 two transformations need to be applied. The colouring transformation
-(in the case of fields on horizontally continous spaces) is to all
+(in the case of fields on horizontally continuous spaces) is to all
 loops in the schedule, then all loops, except the loop over colours,
 have the openMP transformations applied. This script has 17 lines of
 executable python and is all that is required to apply OpenMP to the
@@ -1003,7 +1032,7 @@ fragment of the generated PSy layer},label={lst:PSy_omp}]
   CALL v_proxy%set_dirty()
   CALL v_proxy%halo_exchange(depth=1)
 \end{lstlisting}
-The transformation has resulted in a call to the LFRIc infrastructure
+The transformation has resulted in a call to the LFRic infrastructure
 to the obtain the colouring information, a loop over the number of
 colours, then the OpenMP workshare directives, which parallelise the
 loop over the cells the colour.
@@ -1023,12 +1052,12 @@ need to be inverted with a small number of iterations of a Krylov
 subspace method. More importantly, the semi-implicit time-stepping
 approach requires the solution of a very large sparse system for all
 prognostic unknowns in each step of the non-linear Picard
-iteration (Subsection~\ref{sec:sub:timestepping}). 
+iteration (Section~\ref{sec:sub:timestepping}). 
 Since the system is ill-conditioned, it needs to be
 preconditioned efficiently. This is achieved by the (approximate)
 reduction to an elliptic system for the pressure, which itself is
 preconditioned with a tensor-product multigrid algorithm~\cite{Borm2001} 
-(see Subsection~\ref{sec:sub:preconditioner}). To increase
+(see Section~\ref{sec:sub:preconditioner}). To increase
 efficiency, the pressure preconditioner can be wrapped in its own
 iterative solver for the Helmholtz system. Note that in contrast to
 the approach already employed in the ENDGame model~\cite{QJ:QJ2235},
@@ -1095,11 +1124,11 @@ right):
 \item A preconditioner type which reduces the full linear system to
   the (approximate) Schur complement in pressure space by lumping the
   velocity mass matrix; this preconditioner then calls the solver for
-  the pressure (Helmholtz-) system;
+  the pressure (Helmholtz) system;
 \item A linear operator type which applies the Helmholtz-operator for
   the pressure system;
 \item A preconditioner type which approximately inverts the Helmholtz
-  operator (see Subsection~\ref{sec:sub:preconditioner}).
+  operator (see Section~\ref{sec:sub:preconditioner}).
 \end{itemize}
 Once implemented, those linear operators/preconditioners need to be
 passed to suitable existing linear solvers.
@@ -1131,7 +1160,7 @@ discretisation of the full equations, a suitable operator algebra was
 developed in~\cite{Mitchell2016} and tested in the Firedrake
 library. For horizontally discontinuous function spaces (such as the
 pressure space, $Q_0^D$, and the vertical-only components of the $RT_0$ 
-velocity space, see Subsection~\ref{sec:sub:spatial} for more details), 
+velocity space, see Section~\ref{sec:sub:spatial} for more details), 
 operators can be assembled into a partially assembled matrix type, which 
 stores all couplings within one vertical column. Matrices of this type can be
 multiplied, added and, most importantly, inverted in the tridiagonal
@@ -1236,7 +1265,7 @@ computation into the halos. Each processor computes the contribution
 to dofs that reside on a shared mesh
 entity (such as a face) which belong to a cell adjacent to a halo cell
 from both the ``owned'' cell and the halo cell. Thus avoiding
-comnuication that would otherwise be required to correctly calculate
+communication that would otherwise be required to correctly calculate
 the contribution of neighbour cells to that dof. Comparing MPI only to
 the hybrid mode, each processor in the former regime has more work to
 do in the case of redundant computation from the scaling of volume to
@@ -1249,7 +1278,7 @@ algorithm favours threading; hence OpenMP is faster.
 
 This paper describes the novel features of the design of the new LFRic
 model and infrastructure, and the GungHo dynamical core within it. The
-challenges of GungHo's higher order FEM approach on an unstructured
+challenges of GungHo's higher order FEM approach on a horizontally unstructured
 mesh essentially resulted in a requirement to develop a new
 infrastructure from scratch. This requirement provided an opportunity
 to develop a Domain Specific Language approach with the aim of
@@ -1309,20 +1338,30 @@ code does not mean that scientists and engineers can work in
 isolation. In fact, the close ties between the scientists and software
 engineers has been a key part of the success of the approach.
 
-The compute performance of the dynamical core is promising. While
+The compute performance of the GungHo dynamical core is promising. While
 significant improvements in the algorithmic design are required to
-deliver better throughput of the model, the application scales well to
-160,000 cores. One of the first improvements to the algorithmic
-performance is anticipated to come from application of the new solver
-API discussed in the paper.
+deliver better throughput of the model, the application (with I/O
+capability switched off) scales well, with scaling tailing off at
+around 160,000 cores due to the local volume of current configurations
+becoming very small. One of the first improvements to the algorithmic
+performance is anticipated to come from application of a geometric
+multigrid solver within the new solver infrastructure discussed in the paper.
 
-The design supports both MPI and OpenMP parallelism. The approach of
+Currently, generation of MPI and OpenMP code is supported by PSyclone. The approach of
 computing results into the halo redundantly so as to reduce
 interprocessor communications helps the performance of deployments
 with more OpenMP threads per MPI rank (for a given total core count)
 because the larger domain of the high-thread runs means that the
 relative size of the halos, and therefore the relative amount of
 redundant computation, is smaller.
+
+PSyclone is not designed to automatically optimise code for a given
+platform or compiler. It seeks to enable HPC experts to quickly and
+robustly apply their expertise to a whole code base. So while
+currently the same transformation script is used on all code, it is
+envisaged that in response to profiling an applicaion an HPC expert
+can write and apply different transformations for specific invoke
+calls or specific kernels.
 
 The overall design has sought to carefully modularise functionality. A
 benefit of this is to enable trialling of different externally sourced
@@ -1332,7 +1371,7 @@ a short period of time.
 
 Development of the core LFRic infrastructure and PSyclone is still in
 early days. LFRic is currently written to support any order of finite
-element method on a range of different unstructured meshes. Should the
+element method on a range of different horizontally unstructured meshes. Should the
 GungHo science converge on a particular mesh or set of meshes, and on
 a particular FEM order it will likely be possible to refactor the
 underlying LFRic data model to support more efficient access to the
@@ -1353,25 +1392,6 @@ computational performance results are acceptable it will likely go
 head-to-head with the Met Office UM for 3-4 years while it is further
 enhanced and optimised, eventually replacing the Unified Model
 atmosphere at the core of the Met Office operations.
-
-\label{sec:con}
-\begin{itemize}
-   \item It works! 
-   \item single source science code
-   \item target different programming models, MPI and OpenMP
-   \item Shows good scaling
-   \item Choice of alg (redundant computation - communication
-     avoiding) means threading is favoured - OpenMP is faster
-   \item Separation of concerns - modular design don't have to keep
-     implementing over again during dev.
-   \item e.g. Swap ESMF for YAXT
-   \item more to come, solver, less global sums scale better
-   \item Alg optimal -> also much faster
-   \item then computational optimisation
-   \item OpenACC progamming model for GPUs
-   \item more Science, still single source.
-   \item {\em Huzzah}
-\end{itemize}
 
 \section*{Acknowledgements}
 The original designs for the computational infrastructure and the GungHo
