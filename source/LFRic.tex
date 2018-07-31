@@ -40,8 +40,7 @@
 
 \address[met]{Met Office, UK}
 \address[hartree]{STFC Hartree Centre, Daresbury Laboratory, UK}
-\address[read]{Department of Computer Science, Polly Vacher Building,
-  University of Reading, UK}
+\address[read]{Department of Computer Science, University of Reading, UK}
 \address[bath]{Department of Mathematics, University of Bath, UK}
 \address[monash]{Monash University, Melbourne, Australia}
 
@@ -1133,7 +1132,7 @@ right):
   the (approximate) Schur-complement in pressure space by lumping the
   velocity mass matrix; this preconditioner then calls the solver for
   the pressure (Helmholtz) system;
-\item A linear operator type which applies the Helmholtz-operator for
+\item A linear operator type which applies the Helmholtz operator for
   the pressure system;
 \item A preconditioner type which approximately inverts the Helmholtz
   operator (see Section~\ref{sec:sub:preconditioner}).
@@ -1151,7 +1150,7 @@ potentially leads to significant improvements in performance.
 
 \subsection{\label{sec:sub:preconditioner}Preconditioner}
 
-To precondition the strongly anisotropic Helmholtz-operator for the
+To precondition the strongly anisotropic Helmholtz operator for the
 pressure system, the tensor-product multigrid approach in~\cite{Borm2001} 
 is being developed to use in LFRic. This is a more advanced solver than
 the current tridiagonal vertical-only preconditioner in the ENDGame
@@ -1174,7 +1173,7 @@ stores all couplings within one vertical column. Matrices of this type can be
 multiplied, added and, most importantly, inverted in the tridiagonal
 solvers which realises the vertical line relaxation. This allows the
 high-level construction of the building blocks required for the
-Helmholtz-solver and preconditioner. The same data structures were
+Helmholtz solver and preconditioner. The same data structures were
 implemented as derived Fortran 2003 types in the LFRic code and form
 the building blocks of the tensor-product multigrid preconditioner for
 the elliptic Helmholtz system.
@@ -1223,9 +1222,9 @@ Shown in Figure~\ref{fig:scale_PE} is
 the parallel efficiency of the LFRic time-step for a very high 
 resolution model run. The mesh is a $C1944$ cubed-sphere with 30 
 levels, where each panel has $1944 \times 1944$ cells. This roughly corresponds 
-to a 5km global resolution. The science configuration is the baroclinic wave 
+to a 5 km global resolution. The science configuration is the baroclinic wave 
 test~\cite{qj.2241} with a 75 second time-step. The code was compiled 
-to production level (\verb+-O3+) with the Intel17 compiler. The model 
+to production level (\verb+-O3+) with the Intel 17 compiler. The model 
 was run in hybrid mode with both MPI and OpenMP on the Met Office Cray 
 XC40. Each node comprises of dual socket Intel Xeon (Broadwell) 
 18-core processors. The affinity was set to be three MPI ranks per 
@@ -1258,7 +1257,7 @@ computational optimisations.
       of nodes for a) $18$ MPI ranks per socket and b) $3$ MPI ranks
       per socket and $6$ OpenMP threads per MPI rank. Same colour,
       same hatching shows strong scaling (the dashed line is to guide
-      the eye), same colour diffent hatching shows weak scaling at
+      the eye), same colour different hatching shows weak scaling at
       different local volumes. The legend denotes the cubed-sphere
       mesh size.}
   \end{center}
@@ -1269,7 +1268,7 @@ scaling for the matrix-vector routine. The data were produced using
 the CrayPAT profiling tool on the Met Office Cray XC40. This was the
 most expensive routine in the profile, as it is the dominant part of
 the solver. The code was
-again compiled with the Intel17 compiler. The model employs redundant
+again compiled with the Intel 17 compiler. The model employs redundant
 computation into the halos. Each processor computes the contribution
 to dofs that reside on a shared mesh
 entity (such as a face) which belong to a cell adjacent to a halo cell
@@ -1368,7 +1367,7 @@ PSyclone is not designed to automatically optimise code for a given
 platform or compiler. It seeks to enable HPC experts to quickly and
 robustly apply their expertise to a whole code base. So while
 currently the same transformation script is used on all code, it is
-envisaged that in response to profiling an applicaion an HPC expert
+envisaged that in response to profiling an application an HPC expert
 can write and apply different transformations for specific invoke
 calls or specific kernels.
 
