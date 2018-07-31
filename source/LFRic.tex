@@ -212,8 +212,7 @@ accuracy and stability of ENDGame whilst replacing the regular lat-lon
 grid with a quasi-uniform grid and so avoid the problems associated
 with the polar singularities in ENDGame, resulting from the
 convergence of meridians at the poles. The mesh used to develop GungHo
-within LFRic is an
-equi-angular cubed-sphere, shown in Figure~\ref{fig:cubed-sphere}.
+within LFRic is an equi-angular cubed-sphere, shown in Figure~\ref{fig:cubed-sphere}.
 This has the benefit of near uniform resolution across the globe and a
 maximum/minimum edge length of $\approx 1.3$ achieved by using only
 quadrilateral cells.  However, this quasi-uniform mesh comes at the
@@ -331,8 +330,7 @@ The non-local nature of the trajectory computation can
 lead to significant communication costs if the trajectory crosses over processor 
 boundaries, which often happens near the poles of the lat-lon grid.
 
-In GungHo this semi-Lagrangian scheme is replaced by an Eulerian
-finite volume 
+In GungHo this semi-Lagrangian scheme is replaced by an Eulerian finite-volume 
 method of lines advection scheme that gives inherent local conservation of mass.
 The method fits a high-order upwind polynomial over a number of
 neighbouring cells and evaluates this at a fixed point to compute the advective 
@@ -611,10 +609,10 @@ other mark-up is required. The access descriptors shown above are key
 to deriving the appropriate rules for generating the code in the PSy
 layer. The \verb+arg_type+ has three components. Firstly, the type of
 the data object, in this case fields and operators (an
-  operator is a mapping between one function space and another). Secondly,
+operator is a mapping between one function space and another). Secondly,
 the data access pattern for the data object. For example, \verb+GH_INC+ means the data is
 incremented. Thirdly, which function space the data lives on. In this case, the
-kernel is general and can operate on any function spaces, hence, the
+kernel is general and can operate on any function space, hence, the
 \verb+any_space_n+. Whilst the $n$ can be any number, the function space of the
 first field must correspond to the first function space of the operator and the
 function space of second field must correspond to the second function
@@ -673,11 +671,10 @@ section of the domain.
 
 Performing halo exchanges is not unique to LFRic. Running large parallel
 weather and climate model codes has been done for many years, using
-halo exchanges as a
-method of providing communication between partitions. However, the
-following aspects of the data model within the LFRic infrastructure
-make implementing distributed memory parallelism using halo exchanges
-particularly challenging:
+halo exchanges as a method of providing communication between partitions.
+However, the following aspects of the data model within the LFRic 
+infrastructure make implementing distributed memory parallelism using 
+halo exchanges particularly challenging:
 
 \begin{enumerate}
 
@@ -692,7 +689,7 @@ some code performance, fields are laid out in memory so that vertically
 adjacent data points are next to each other, and the looping structure
 within LFRic kernels is vertical looping innermost;
 
-\item LFRic supports a finite element formulation which means that data
+\item LFRic supports a finite-element formulation which means that data
 are held as dofs on all the different
 entities within the mesh: cell volumes, faces, edges and vertices.
 Partitioning the domain along cell boundaries will always lead to
@@ -723,7 +720,7 @@ following information to the library:
 Initially, the LFRic project used the infrastructure library component
 of the Earth System Modelling Framework (ESMF)~\cite{ESMFDocs} to
 provide the layer between the model and MPI, however it was not particularly
-well-suited to the higher order finite element fields used in LFRic. Although
+well-suited to the higher order finite-element fields used in LFRic. Although
 routeing tables it generated were optimal (the halo exchanges called
 during timestepping were very fast), the time to generate the tables
 became quite long when the model was run at scale. The design of the
@@ -758,7 +755,7 @@ delivering LFRic requirements.
 
 As with all the parallelisation within LFRic, the shared memory
 parallelism is implemented by inserting directives in the PSy layer. 
-The finite element formulation makes use of data on mesh entities
+The finite-element formulation makes use of data on mesh entities
 shared by more than one cell. Two different threads working on
 adjacent cells may try writing to a dof shared between the cells at the
 same time.
@@ -1138,8 +1135,9 @@ passed to suitable existing linear solvers.
 
 In addition to this more traditional approximate Schur-complement
 approach for solving the full linear system, the development of
-solvers based on a hybridisation approach is currently being explored. Since
-an exact Schur-complement can be formed in this case, hybridisation
+solvers based on a hybridisation approach is currently being 
+explored~\cite{cockburnandjay2004,DBLP:journals/corr/abs-1802-00303}. 
+Since an exact Schur-complement can be formed in this case, hybridisation
 avoids the expensive iteration over the full linear system, and
 potentially leads to significant improvements in performance.
 
@@ -1278,7 +1276,7 @@ algorithm favours threading; hence OpenMP is faster.
 
 \section{Discussion and Conclusion}
 
-The paper describes the novel features of the design of the new LFRic
+This paper describes the novel features of the design of the new LFRic
 model and infrastructure, and the GungHo dynamical core within it. The
 challenges of GungHo's higher order FEM approach on a horizontally unstructured
 mesh essentially resulted in a requirement to develop a new
@@ -1288,6 +1286,33 @@ encapsulating all platform specific parallel deployment requirements
 within metadata. This metadata was then parsed by a DSL
 compiler called PSyclone to automatically generate the OpenMP and MPI
 parallel code required to deploy the application on an HPC machine.
+
+The approach contrasts with other work seeking to make
+weather and climate models exascale ready in that most other works
+are not writing models from scratch but instead either accommodating
+existing models in new frameworks or making significant changes to
+existing models, or both of the above. DSLs feature heavily in other
+approaches but are usually only part of the solution. For example,
+MeteoSwiss have ported the COSMO model to run on GPUs, by
+rewriting the dynamical core code using a DSL (STELLA). Other parts
+of the code (e.g. physics) have been instrumented with compiler
+directives~\cite{JSFI17}. CSCS (the Swiss National  Supercomputing
+Centre) have made significant progress in porting the ICON dynamical
+core to run on GPUs by instrumentation with OpenACC directives and
+several physics schemes have been ported using a combination of
+OpenACC and the CLAW source to source translation tool. To further
+this effort, the ENIAC (ENable Icon on a heterogeneous ArChitecture)
+project seeks to make the ICON model exascale ready using a similar
+strategy of tools (the GridTools DSL and the CLAW source to source
+translator) and OpenACC directives~\cite{ENIACDocs}.
+The E3SM (Energy Exascale Earth System Model) project (a collaboration
+between 7 National US laboratories)~\cite{E3SMDocs} has ported
+HOMME (the dynamics/transport component of the Community Earth System
+Model) to a single source version (HOMMEXX) able to run on MIC,
+CPU and GPU architectures using Kokkos. Kokkos is a library that
+implements a programming model in C++ for writing performance
+portable applications by providing template abstractions for parallel
+code~\cite{KokkosGitHub}.
 
 In short, the design of LFRic has been developed and deployed
 successfully so far. The GungHo dynamical core is routinely run in a
