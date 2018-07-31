@@ -5,6 +5,8 @@
 \usepackage{subfig}
 \usepackage{xcolor}
 \usepackage{listings}
+\usepackage{url}
+\def\UrlBreaks{\do\/\do-}
 \lstset{language=[08]Fortran,
   basicstyle=\small\ttfamily,
   %identifierstyle=\color{green},
@@ -45,22 +47,21 @@
 
 \begin{abstract}
 
-  The paper describes the LFRic atmosphere model being developed by
-  the Met Office to replace the Unified Model for its climate and
-  weather operations during the 2020s. LFRic uses the GungHo dynamical
-  core and runs on a semi-unstructured cubed-sphere mesh. The design
-  follows object oriented principles to modularise functionality and
-  better benefit from externally obtained packages where possible. In
-  particular the design imposes a separation of concerns between the
-  science code and parallel code to promote performance
-  portability. An application called PSyclone, developed at the STFC
-  Hartree centre can generate the parallel code enabling efficient
-  deployment of a single science code onto different hardware. The
-  paper provides an overview of the scientific requirement, the design
-  of the LFRic software infrastructure, the operation of the PSyclone
-  code generator, and experiences of writing and deploying the new
-  model. Preliminary compute performance results of the GungHo
-  dynamical core are described.
+  This paper describes LFRic:\ the new weather and climate modelling
+  system being developed by the UK Met Office to replace the existing
+  Unified Model in preparation for exascale computing in the 2020s.
+  LFRic uses the GungHo dynamical core and runs on a semi-structured 
+  cubed-sphere mesh. The design of the supporting infrastructure follows
+  object orientated principles to facilitate modularity and the use of
+  external libraries where possible. In particular, a `separation of concerns'
+  between the science code and parallel code is imposed to promote
+  performance portability. An application called PSyclone, developed at the
+  STFC Hartree centre, can generate the parallel code enabling deployment of
+  a single source science code onto different machine architectures.
+  This paper provides an overview of the scientific requirement, the design
+  of the software infrastructure, and examples of PSyclone usage. Preliminary
+  performance results show strong scaling and an indication that hybrid
+  MPI/OpenMP performs better than pure MPI.  
 
 \end{abstract}
 
@@ -119,7 +120,8 @@ as the UM infrastructure will not support an unstructured mesh; and to
 design the infrastructure with a separation between scientific code
 and parallel systems code -- code that supports parallelism on HPC
 machines -- so as to reduce the cost and complexity of porting to new
-architectures. Furthermore, a strict API would be used so that it
+architectures. Furthermore, a strict Application Programming 
+Interface (API) would be used so that it
 would be possible to auto-generate the parallel code. This paper
 describes the novel features of this new model.
 
@@ -176,7 +178,7 @@ communication of information between distributed memory domains. This
 infrastructure is implemented in Fortran and uses Fortran 2003
 constructs to impose the separation of concerns.
 
-The PSyKAl separation of concens aims to keep single source science
+The PSyKAl separation of concerns aims to keep single source science
 code separate from the complexities of the LFRic implementation. While
 algorithm and kernel code is written to strict rules, it looks largely
 like Fortran 90 code with minimal reference to Fortran 2003
@@ -217,9 +219,9 @@ This has the benefit of near uniform resolution across the globe and a
 maximum/minimum edge length of $\approx 1.3$ achieved by using only
 quadrilateral cells.  However, this quasi-uniform mesh comes at the
 expense of losing orthogonality (the line between two neighbouring
-cells centers is not, in general, perpendicular to the edge shared
+cells centres is not, in general, perpendicular to the edge shared
 between the two cells). Additionally, the two polar singularities of
-the lon-lat grid have been replaced by the eight corners of
+the lat-lon grid have been replaced by the eight corners of
 the cubed sphere, where only three cells meet at a vertex instead of
 the usual four. The lack of orthogonality and the presence of the
 corner singularities need to be taken into account when choosing an
@@ -254,6 +256,7 @@ Since the current UM uses~$O(100)$ layers the cost of the indirection is minimal
 %
 
 \subsection{Formulation\label{sec:sub:formulation}}
+
 The GungHo dynamical core solves the Euler equations for a perfect gas in a 
 rotating frame
 %
@@ -277,6 +280,7 @@ $p_0$ is a reference pressure; $R$ is the gas constant; $c_p$ is the specific
 heat at constant pressure and $\kappa\equiv R/c_p$.
 
 \subsection{Spatial Discretisation\label{sec:sub:spatial}}
+
 In order to maintain a similar
 accuracy to ENDGame on a quasi-uniform mesh a mixed Finite Element Method is 
 used~\citep{cotter2012, natale2016}. This gives the finite element equivalent 
@@ -320,6 +324,7 @@ centre of the top and bottom faces of a cell. See~\cite{melvin2018} for a full
 description of the discretisation used in the GungHo model.
 
 \subsection{Advection\label{sec:sub:advection}}
+
 In order to achieve accuracy similar to that of ENDGame it is important to have 
 a high-order approximation to the scalar advective terms: $\mathbf{u}.\nabla\rho$ 
 and $\mathbf{u}.\nabla\theta$. In ENDGame these are evaluated using a 
@@ -347,6 +352,7 @@ to the computation from using a dimensionally split formulation that only requir
 one-dimensional interpolation.
 
 \subsection{Time-stepping\label{sec:sub:timestepping}}
+
 As in ENDGame, to facilitate the use of long time-steps, a two time-level 
 iterative semi-implicit time-stepping scheme is used. This requires, within each 
 time-step, a non-linear Picard iteration to update the non-linear and advection terms 
@@ -389,6 +395,7 @@ An overview of the time-step is given in Table~\ref{tab:timestep}.
 %
 
 \section{\label{sec:SoC}Separation of Concerns}
+
 Science applications in general and weather and climate codes in
 particular are written in high-level languages such as Fortran or
 C/C++. Fortran is commonly employed for weather and climate
@@ -416,7 +423,7 @@ socket. Science applications typically have already been adapted to run on multi
 nodes to exploit supercomputers with the distributed memory and data parallelism
 typically expressed over MPI. Multi-core nodes present
 additional opportunities and challenges to applications in terms of exploitation of
-shared address space within a node. Heterogenous compute nodes such as
+shared address space within a node. Heterogeneous compute nodes such as
 CPU + GPU with distinct memory spaces require further additional programming
 models to enable proper exploitation of the available compute performance.
 
@@ -455,7 +462,7 @@ contains the looping over the horizontal field and is where the data parallelism
 The bottom layer comprises the kernels which encode the operation invoked in the
 algorithm layer. Kernels are written to operate on a single vertical column of data. 
 Shown in Figure~\ref{fig:psykal} is a schematic diagram of this
-layered software achitecture. The red arrows indicate the control flow
+layered software architecture. The red arrows indicate the control flow
 through the different layers.
 
 \begin{figure}
@@ -517,10 +524,11 @@ MPI distributed memory parallelism and infrastructure calls
 to dereference the Fortran 2003 objects, looping over
 the horizontal mesh elements and calling the kernels
 themselves. However, PSyclone can also perform transformations and
-target other progamming models such as OpenMP or OpenACC. PSyclone is
+target other programming models such as OpenMP or OpenACC. PSyclone is
 then in effect a DSEL compiler.
 
 \subsection{\label{sec:sub:implement}Implementation}
+
 The algorithm layer code is written in Fortran 2003. However, this
 code is not actually compiled; it is parsed and processed by PSyclone
 first. Most of the Fortran is left as written. The exception to this
@@ -652,9 +660,9 @@ field object relates to the mesh is described by the function space.
 
 Note that while most of the LFRic infrastructure supports a
 horizontally unstructured mesh, the partitioner is specialised to
-provide partitioning only of cubed-sphere and planar meshes. If a
-different mesh is required it is a relatively straightforward change
-to extend the partitioner to support it.
+provide optimised partitioning of cubed-sphere and planar meshes, only. 
+If a different mesh is required it is a relatively straightforward 
+change to extend the partitioner to support it.
 
 Most of the infrastructure is accessed through the field object. So, for
 example if a halo exchange is required on a field, the halo exchange
@@ -813,7 +821,7 @@ The key features of XIOS can be summarised as follows:
 \begin{enumerate}
   \item Flexible definition of I/O workflows via external XML files;
   \item Client/Server architecture allowing asynchronous I/O servers on dedicated cores;
-  \item Sophisticated "in situ" post-processing via workflows defined in the XML file(s). 
+  \item Sophisticated ``in situ'' post-processing via workflows defined in the XML file(s). 
 \end{enumerate}
 
 XIOS is written in C++, but also provides a Fortran API to developers. It makes use of
@@ -866,7 +874,7 @@ nothing in the approach to prevent other languages being targeted in
 future. PSyclone itself is written in Python.
 
 Figure~\ref{fig:psyclone-arch} shows the data flow within the PSyclone
-architecture.  Starting from the left, the Algorithm is parsed (using
+architecture. Starting from the left, the Algorithm is parsed (using
 fparser, a pure Python implementation of a Fortran parser) and any
 invoke procedure calls identified. The list of kernels (and their arguments)
 associated with each of these calls is then stored. For each invoke,
@@ -971,7 +979,7 @@ on the command line. For example, to add OpenMP to the PSy layer,
 two transformations need to be applied. The colouring transformation
 (in the case of fields on horizontally continuous spaces) is to all
 loops in the schedule, then all loops, except the loop over colours,
-have the openMP transformations applied. This script has 17 lines of
+have the OpenMP transformations applied. This script has 17 lines of
 executable python and is all that is required to apply OpenMP to the
 whole model. 
 
@@ -1122,7 +1130,7 @@ right):
 \item A linear operator type which applies the full linear system to
   all components of a \texttt{field\_vector};
 \item A preconditioner type which reduces the full linear system to
-  the (approximate) Schur complement in pressure space by lumping the
+  the (approximate) Schur-complement in pressure space by lumping the
   velocity mass matrix; this preconditioner then calls the solver for
   the pressure (Helmholtz) system;
 \item A linear operator type which applies the Helmholtz-operator for
@@ -1183,6 +1191,7 @@ resolution). This greatly increases scalability since it avoids global
 couplings which arise on the coarsest level.
 
 \section{\label{sec:scal}Scaling}
+
 The key performance metric for
 LFRic and GungHo is scalability. The use of an unstructured mesh of
 GungHo and the solver construction described in
@@ -1194,11 +1203,11 @@ delayed implementing such a solver. This remains a work in progress.
 
 The February 2018 release of LFRic contains a simpler
 solver. This employs a Krylov iterative GCR algorithm on the mixed
-system of velocity, potential temperature, density, exner
-pressure. This is preconditioned by an approximate Schur complement
-for the exner pressure which uses lumped mass matrices. The pressure
+system of velocity, potential temperature, density and Exner
+pressure. This is preconditioned by an approximate Schur-complement
+for the Exner pressure which uses lumped mass matrices. The pressure
 (Helmholtz) system is solved with BiCGstab and preconditioned by a
-vertical only tridiagonal solver. Both mixed and helmholtz solvers use
+vertical only tridiagonal solver. Both mixed and Helmholtz solvers use
 a relative tolerance of $10^{-6}$.
 
 \begin{figure}
@@ -1274,7 +1283,7 @@ MPI only. Choosing redundant computation as a communication reduction
 algorithm favours threading; hence OpenMP is faster.
  
 
-\section{Discussion and Conclusion}
+\section{\label{sec:con}Discussion and Conclusion}
 
 This paper describes the novel features of the design of the new LFRic
 model and infrastructure, and the GungHo dynamical core within it. The
@@ -1332,7 +1341,7 @@ throughout.
 
 The need for PSyclone and the LFRic infrastructure to continuously
 evolve in the light of new and changing science requirements
-underlines an important point: the ``separation of concerns'' that has
+underlines an important point: the `separation of concerns' that has
 enabled the science code to be kept isolated from the parallel systems
 code does not mean that scientists and engineers can work in
 isolation. In fact, the close ties between the scientists and software
