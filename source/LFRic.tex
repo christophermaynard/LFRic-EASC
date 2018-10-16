@@ -248,7 +248,7 @@ finally \textit{map} is an array containing the address of data points at
 the bottom of the model column.
 Using an extruded mesh of this type with direct access and data contiguity
 in the vertical, the cost of the indirectly addressed horizontal index can 
-be offset (see~\cite{oi:10.1177/1094342010385019}) provided enough layers are used. 
+be offset (see~\cite{doi:10.1177/1094342010385019}) provided enough layers are used. 
 Since the current UM uses~$O(100)$ layers the cost of the indirection is minimal.
 %
 
@@ -694,12 +694,13 @@ some code performance, fields are laid out in memory so that vertically
 adjacent data points are next to each other, and the looping structure
 within LFRic kernels is vertical looping innermost;
 
-\item LFRic supports a finite-element formulation which means that data
-are held as dofs on all the different
-entities within the mesh: cell volumes, faces, edges and vertices.
-Partitioning the domain along cell boundaries will always lead to
-partitions which need to share data values. Sharing data makes assigning
-ownership of that data, and therefore, halo swapping more complex.
+\item As noted in section 2.2, the discretisation being used within LFRic
+leads to dof data being held on all the different entities within the mesh: 
+cell volumes, faces, edges and vertices. A partitioning scheme that partitions
+the domain along cell boundaries leads to partitions that must share the
+dofs that are located on the boundaries of the domain. Having to assign
+ownership of these shared dofs to a particular partition adds to the
+complexity of setting up the halo exchanges.
 
 \end{enumerate}
 
