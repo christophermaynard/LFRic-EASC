@@ -564,7 +564,7 @@ Shown in Listing~\ref{lst:PSy1} is a code fragment from the generated PSy layer 
 the call to the matrix-vector kernel in invoke shown in Listing~\ref{lst:invoke}.
 
 \begin{lstlisting}[language=Fortran, numbers=left,caption={Code 
-fragment of the generated PSy layer},label={lst:PSy1}]
+fragment of the generated PSy layer with distributed memory support},label={lst:PSy1}]
  CALL v_proxy%set_dirty()
  CALL v_proxy%halo_exchange(depth=1)
  IF (s_proxy%is_dirty(depth=1)) THEN
@@ -977,69 +977,40 @@ interactive session, they will typically be used during the
 compilation phase of a potentially large application. Therefore,
 PSyclone allows (Python) transformation scripts to be supplied
 on the command line. For example, to add OpenMP to the PSy layer,
-two transformations need to be applied. The colouring transformation
+three transformations need to be applied. The colouring transformation
 (in the case of fields on horizontally continuous spaces) is to all
 loops in the schedule, then all loops, except the loop over colours,
-have the OpenMP transformations applied. This script has 17 lines of
-executable python and is all that is required to apply OpenMP to the
-whole model. 
+have the OpenMP transformations applied. This script, shown in
+Listing~\ref{lst:omp.py} in Appendix~\ref{sec:app1}, has 17 lines of
+executable Python and is all that is required to apply OpenMP to the
+whole model. Psyclone can also apply specialized directives for
+different loops, as un-transformed loops are esentially nodes in
+an invoke schedule which can be reached individually.
 
-%\begin{lstlisting}[language=python,caption={Python script for applying
-%transformations to a PSyclone schedule.},label={lst:omp.py}]
-%def trans(psy):
-%    ''' Applies PSyclone colouring & OpenMP transformations. '''
-%    ctrans = Dynamo0p3ColourTrans()
-%    otrans = Dynamo0p3OMPLoopTrans()
-%    oregtrans = OMPParallelTrans()
-%
-%    # Loop over all of the invokes in the PSy object
-%    for invoke in psy.invokes.invoke_list:
-%
-%        schedule = invoke.schedule
-%
-%        # Colour loops over cells unless they are on discontinuous
-%        # spaces (W3, WTHETA and W2V) or over dofs
-%        for loop in schedule.loops():
-%            if loop.iteration_space == "cells" \
-%                and loop.field_space.orig_name \
-%                    not in DISCONTINUOUS_FUNCTION_SPACES:
-%                schedule, _ = ctrans.apply(loop)
-%
-%        # Add OpenMP to loops unless they are over colours
-%        for loop in schedule.loops():
-%            if loop.loop_type != "colours":
-%                schedule, _ = oregtrans.apply(loop)
-%                schedule, _ = otrans.apply(loop, reprod=True)
-%    return psy
-%\end{lstlisting}
-%Here, the `psy' object contains PSyclone's internal represenation of
-%the PSy layer that it will generate. The script takes this, modifies
-%it using transformations and then returns it.
-
-Applying the OpenMP script to the invoke call described in
+Applying the OpenMP script (Listing~\ref{lst:omp.py}) without
+the distributed memory support to the invoke call described in
 Section~\ref{sec:SoC} results in the following generated PSy layer
 code shown in Listing~\ref{lst:PSy_omp}. 
 \begin{lstlisting}[language=Fortran, numbers=left,caption={Code 
-fragment of the generated PSy layer},label={lst:PSy_omp}]
+fragment of the generated PSy layer with OpenMP transformations
+and no distributed memory support},label={lst:PSy_omp}]
   ! Look-up colour map
   CALL v_proxy%vspace%get_colours(ncolour, ncp_colour, cmap)
   DO colour=1,ncolour
     !$omp parallel default(shared), private(cell)
     !$omp do schedule(static)
     DO cell=1,ncp_colour(colour)
-      CALL matrix_vector_code( cmap(colour, cell), nlayers, &
-        v_proxy%data, s_proxy%data, mm_proxy%ncell_3d, & 
+      CALL matrix_vector_code(cmap(colour, cell), nlayers, &
+        v_proxy%data, s_proxy%data, mm_proxy%ncell_3d, &
         mm_proxy%local_stencil, ndf_any_space_1_v, &
         undf_any_space_1_v, &
         map_any_space_1_v(:,cmap(colour, cell)), &
         ndf_any_space_2_s, undf_any_space_2_s, &
-        map_any_space_2_s(:,cmap(colour, cell)) )
-    END DO 
+        map_any_space_2_s(:,cmap(colour, cell)))
+    END DO
     !$omp end do
     !$omp end parallel
-  END DO 
-  CALL v_proxy%set_dirty()
-  CALL v_proxy%halo_exchange(depth=1)
+  END DO
 \end{lstlisting}
 The transformation has resulted in a call to the LFRic infrastructure
 to obtain the colouring information, a loop over the number of
@@ -1400,7 +1371,42 @@ atmosphere at the core of the Met Office operations.
 The original designs for the computational infrastructure and the GungHo
 formulation arose from the GungHo project. The contribution of GungHo
 Consortium members as well as UM Partnership collaborators and GHASP team
-members is gratefully acknowledged. 
+members is gratefully acknowledged.
+
+
+\section*{\label{sec:app1}Appendix}
+
+\begin{lstlisting}[language=python,caption={Python script for applying
+transformations to a PSyclone schedule.},label={lst:omp.py}]
+def trans(psy):
+   ''' Applies PSyclone colouring and OpenMP transformations. '''
+   ctrans = Dynamo0p3ColourTrans()
+   otrans = Dynamo0p3OMPLoopTrans()
+   oregtrans = OMPParallelTrans()
+
+   # Loop over all of the invokes in the PSy object
+   for invoke in psy.invokes.invoke_list:
+
+       schedule = invoke.schedule
+
+       # Colour loops over cells unless they are on discontinuous
+       # spaces (W3, WTHETA and W2V) or over dofs
+       for loop in schedule.loops():
+           if loop.iteration_space == "cells" \
+               and loop.field_space.orig_name \
+                   not in DISCONTINUOUS_FUNCTION_SPACES:
+               schedule, _ = ctrans.apply(loop)
+
+       # Add OpenMP to loops unless they are over colours
+       for loop in schedule.loops():
+           if loop.loop_type != "colours":
+               schedule, _ = oregtrans.apply(loop)
+               schedule, _ = otrans.apply(loop, reprod=True)
+   return psy
+\end{lstlisting}
+Here, the `psy' object contains PSyclone's internal representation of
+the PSy layer that it will generate. The script takes this, modifies
+it using transformations and then returns it.
 
 \newpage
 
