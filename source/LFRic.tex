@@ -212,7 +212,7 @@ grid with a quasi-uniform grid. This avoids the problems associated
 with the polar singularities in ENDGame resulting from the
 convergence of meridians at the poles. The mesh used to develop GungHo
 within LFRic is an equi-angular cubed-sphere, shown in Figure~\ref{fig:cubed-sphere}
-~\cite{doi:10.1175/MWR2890.1}. This has the benefit of near uniform 
+~\cite{NairEtal2005}. This has the benefit of near uniform 
 resolution across the globe and a maximum/minimum edge length of
 $\approx 1.3$ achieved by using only quadrilateral cells.  However,
 this quasi-uniform mesh comes at the expense of losing orthogonality
@@ -248,7 +248,7 @@ finally \textit{map} is an array containing the address of data points at
 the bottom of the model column.
 Using an extruded mesh of this type with direct access and data contiguity
 in the vertical, the cost of the indirectly addressed horizontal index can 
-be offset (see~\cite{doi:10.1177/1094342010385019}) provided enough layers are used. 
+be offset (see~\cite{MacDonaldEtal2011}) provided enough layers are used. 
 Since the current UM uses~$O(100)$ layers the cost of the indirection is minimal.
 %
 
@@ -694,8 +694,8 @@ some code performance, fields are laid out in memory so that vertically
 adjacent data points are next to each other, and the looping structure
 within LFRic kernels is vertical looping innermost;
 
-\item As noted in section 2.2, the discretisation being used within LFRic
-leads to dof data being held on all the different entities within the mesh: 
+\item As noted in Section~\ref{sec:sub:spatial}, the discretisation being used within
+LFRic leads to dof data being held on all the different entities within the mesh: 
 cell volumes, faces, edges and vertices. A partitioning scheme that partitions
 the domain along cell boundaries leads to partitions that must share the
 dofs that are located on the boundaries of the domain. Having to assign
@@ -830,7 +830,7 @@ and time averages. The output schedule and
 file format are defined by an XML file which hides a lot of complexity from the user.
 
 Prior to 2016, XIOS only supported read and write of NetCDF file formats that follow the CF
-(Climate and Forecast) conventions~\cite{CF}.  As previously explained in Section~\ref{sec:GH},
+(Climate and Forecast) conventions~\cite{CFWeb}.  As previously explained in Section~\ref{sec:GH},
 the LFRic implementation uses horizontally unstructured meshes and a FEM formulation,
 where variables are held on different elements of the mesh (vertices, edges or faces).
 Therefore, the I/O system needs to handle data structured in this way. The UGRID-NetCDF
@@ -868,12 +868,11 @@ compiler which, given an algorithm and associated kernels, generates
 the code for the middle, PSy layer. Currently, each of these layers
 must be in Fortran and hence the compiler is embedded in
 Fortran. This makes the generated code easy to understand for domain
-scientists and means that exiting debuggers and profilers can be used
-as if it were any other hand written Fortran code.
-
-The choice of Fortran is motivated in Section~\ref{sec:SoC}. However, there is
-nothing in the approach to prevent other languages being targeted in the
-future. PSyclone itself is written in Python.
+scientists and means that existing debuggers and profilers can be used
+as if it were any other hand written Fortran code. The choice of Fortran
+is motivated in Section~\ref{sec:SoC}. However, there is nothing in the
+approach to prevent other languages being targeted in the future. PSyclone
+ itself is written in Python.
 
 Figure~\ref{fig:psyclone-arch} shows the data flow within the PSyclone
 architecture. Starting from the left, the Algorithm is parsed (using
