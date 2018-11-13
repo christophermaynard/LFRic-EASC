@@ -874,6 +874,43 @@ is motivated in Section~\ref{sec:SoC}. However, there is nothing in the
 approach to prevent other languages being targeted in the future. PSyclone
  itself is written in Python.
 
+PSyclone is heavily influenced by the OP2 system~\citep{OP2,
+  PYOP2}. However, PSyclone supports the specification of more than
+one kernel in a parallel region of code, compared with a limit of one
+for OP2, giving more scope for optimisation. Further, PSyclone takes
+responsibility for distributed memory parallelisation whereas it must be
+written manually by the application developer in OP2.
+
+PSyclone is also designed to support a combination of kernels that are
+1) written by the application developer and 2) provided by the
+system. It also allows optimisations to be applied by an HPC expert
+via a scripting interface, rather than necessarily automating the
+process. By way of contrast, in the related
+GridTools~\citep{grid_tools} and Firedrake~\citep{firedrake,fenics}
+approaches, the application developer specifies the mathematical
+operations (finite-difference stencils and finite element operations,
+respectively) in a high-level language and optimised code is generated
+automatically. Whilst this is a very powerful approach, it relies on
+the high-level language capturing all possible operations and for the
+system to produce highly optimised code automatically.
+
+PSyclone, GridTools and Firedrake approaches are all based on the
+concept of (various flavours of) a Domain-Specific Language (DSL) for
+finite-difference and finite-element applications. This is distinct
+from other, lower-level performance-portable abstractions, such as
+Kokkos~\cite{KokkosGitHub} and OCCA~\citep{occa} where the aim is to
+provide a language that permits an application developer to implement
+a kernel once and have it compile to performant single-node code on a
+range of multi- and many-core devices. These approaches compliment
+DSL's, in that DSL's could make use of them to generate single-node
+parallel code rather than using e.g. OpenMP or CUDA directly.
+
+Lastly, CLAW~\citep{claw} is a Fortran source-to-source translation
+tool designed to produce performance-portable Physics single-node
+code. As such it is complimentary to PSyclone and could be used to
+optimise PSyclone physics kernels that have been written by
+application developers.
+
 Figure~\ref{fig:psyclone-arch} shows the data flow within the PSyclone
 architecture. Starting from the left, the Algorithm is parsed (using
 fparser, a pure Python implementation of a Fortran parser) and any
@@ -936,16 +973,6 @@ halo swap if the halo was dirty. Subsequently, dependence analysis has
 been added and now only those halo exchanges that are known to be
 required are inserted ~\cite{psyclone}.
 
-The PSyclone approach and the {PS}y{KA}l separation of concerns is
-heavily influenced by the OP2 system~\citep{OP2, PYOP2}. The calls
-that specify parallelism in both approaches are similar in terms of
-where they are placed in the code and in their semantics. However,
-PSyclone supports the specification of more than one kernel in a
-parallel region of code, compared with one for OP2, giving more scope
-for optimisation. Unlike OP2, PSyclone also takes responsibility for
-adding halo exchanges and global sums. For a comparison of {PS}y{KA}l
-with other, similar approaches see, for example~\cite{nemolite2d_psykal}.
-
 \subsection{Transformations}
 
 The large variety in existing computer architectures, the number of
@@ -975,25 +1002,27 @@ transformation for this purpose.
 Although PSyclone transformations may be applied within a Python
 interactive session, they will typically be used during the
 compilation phase of a potentially large application. Therefore,
-PSyclone allows (Python) transformation scripts to be supplied
-on the command line. For example, to add OpenMP to the PSy layer,
-three transformations need to be applied. The colouring transformation
-(in the case of fields on horizontally continuous spaces) is to all
-loops in the schedule, then all loops, except the loop over colours,
-have the OpenMP transformations applied. This script, shown in
-Listing~\ref{lst:omp.py} in the Appendix, has 17 lines of
-executable Python and is all that is required to apply OpenMP to the
-whole model. Psyclone can also apply specialized directives for
-different loops, as un-transformed loops are esentially nodes in
-an invoke schedule which can be reached individually.
+PSyclone allows (Python) transformation scripts to be supplied on the
+command line. For example, to add OpenMP to the PSy layer, three
+transformations need to be applied. Firstly, the colouring
+transformation is applied to all loops in the schedule which contain
+fields on horizontally continuous spaces that are modified, Secondly,
+all loops, except loops over colours, have two OpenMP transformations
+applied. This script, shown in Listing~\ref{lst:omp.py} in the
+Appendix, has 17 lines of executable Python and is all that is
+required to apply OpenMP to the whole model. Note, PSyclone supports
+the application of transformations to any subset of a schedule and to
+any set of schedules so may be used for general whole-code
+optimisations and/or specific optimisations to particular code
+regions.
 
-Applying the OpenMP script (Listing~\ref{lst:omp.py}) without
-the distributed memory support to the invoke call described in
+Applying the OpenMP script (Listing~\ref{lst:omp.py}) (with
+the distributed memory support switched off) to the invoke call described in
 Section~\ref{sec:SoC} results in the following generated PSy layer
 code shown in Listing~\ref{lst:PSy_omp}. 
 \begin{lstlisting}[language=Fortran, numbers=left,caption={Code 
 fragment of the generated PSy layer with OpenMP transformations
-and no distributed memory support},label={lst:PSy_omp}]
+and distributed memory support switched off},label={lst:PSy_omp}]
   ! Look-up colour map
   CALL v_proxy%vspace%get_colours(ncolour, ncp_colour, cmap)
   DO colour=1,ncolour
@@ -1405,8 +1434,9 @@ def trans(psy):
    return psy
 \end{lstlisting}
 Here, the `psy' object contains PSyclone's internal representation of
-the PSy layer that it will generate. The script takes this, modifies
-it using transformations and then returns it.
+the PSy layer (PSyIRe) that it uses to generate code. The script takes
+the `psy' object, modifies it using transformations and then returns
+it.
 
 \newpage
 
