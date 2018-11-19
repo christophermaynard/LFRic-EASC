@@ -1252,24 +1252,29 @@ computational optimisations.
 
 \begin{figure}
   \begin{center}
-    \subfloat[]{\includegraphics[width=0.75\linewidth]{Fig8a_strong_mv_T1.eps}}\\
-    \subfloat[]{\includegraphics[width=0.75\linewidth]{Fig8b_strong_mv_T6.eps}}
-    \caption{\label{fig:OMP_scale}Scaling of the matrix-vector routine
-      run-time in seconds for $100$ time-steps, with different numbers
-      of nodes for a) $18$ MPI ranks per socket and b) $3$ MPI ranks
-      per socket and $6$ OpenMP threads per MPI rank. Same colour,
-      same hatching shows strong scaling (the dashed line is to guide
-      the eye), same colour different hatching shows weak scaling at
-      different local volumes. The legend denotes the cubed-sphere
-      mesh size.}
+%    \subfloat[]{
+\includegraphics[width=0.75\linewidth]{Fig8a_strong_scale.eps}%}\\
+%    \subfloat[]{\includegraphics[width=0.75\linewidth]{Fig8b_weak_scale.eps}}
+    \caption{\label{fig:OMP_scale}a) Log-log plot of strong scaling of
+      50 time-steps of the baroclinic wave problem on a cubed sphere
+      mesh, C576, with 30 levels from the {\em fallow deer}
+      release. The red bars, labelled MPI, show MPI only, {\em i.e.}
+      36 MPI ranks per node. The yellow bars, labelled OMP, show
+      mixed-mode, with 6 MPI ranks per node and 6 OpenMP threads per
+      MPI rank. The dashed line shows perfect scaling and is drawn to
+      guide the eye.} 
+%   b) Log-linear plot of weak scaling of 50
+%      timesteps of the baroclinic wave problem for a fixed local
+%      volume of $24x24$ cells with 30 levels. The meshes range from
+%      C288 to C1152. The teal bars, labelled MPI, show MPI only, {\em
+%        i.e} 36 MPI ranks per node. The navy bars, labelled OMP show
+%      mixed-mode, with 6 MPI ranks per node and 6 OpenMP threads per rank.}
   \end{center}
 \end{figure}
 
 Shown in Figure~\ref{fig:OMP_scale} is the effect of using OpenMP on 
-scaling for the matrix-vector routine. The data were produced using
-the CrayPAT profiling tool on the Met Office Cray XC40. This was the
-most expensive routine in the profile, as it is the dominant part of
-the solver. The code was
+scaling for 50 time-steps of the baroclinic wave problem, in this case
+with the {\em fallow deer} release of LFRic. The code was
 again compiled with the Intel 17 compiler. The model employs redundant
 computation into the halos. Each processor computes the contribution
 to dofs that reside on a shared mesh
@@ -1279,9 +1284,9 @@ communication that would otherwise be required to correctly calculate
 the contribution of neighbour cells to that dof. Comparing MPI only to
 the hybrid mode, each processor in the former regime has more work to
 do in the case of redundant computation from the scaling of volume to
-surface area. Hybrid mode has fewer cells to redundantly compute than
+surface area. The mixed-mode has fewer cells to redundantly compute than
 MPI only. Choosing redundant computation as a communication reduction
-algorithm favours threading; hence OpenMP is faster.
+algorithm favours threading; hence OpenMP is faster and scales better.
  
 
 \section{\label{sec:con}Discussion and Conclusion}
