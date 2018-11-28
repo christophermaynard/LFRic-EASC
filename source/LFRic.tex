@@ -208,8 +208,8 @@ underlying mesh. It is then coupled to a suite of subgrid physical
 parametrization schemes for processes that are not resolved (such as
 cloud microphysics and convection) and those that act as subgrid
 diabatic sources (such as longwave and shortwave radiative
-heating/cooling). For the purposes of this paper we only consider
-the dry dynamical core without the subgrid processes.
+heating/cooling). For the purposes of this paper only the dry
+dynamical core without the subgrid processes is considered.
 
 The GungHo dynamical core has been developed to replace the current ENDGame
 dynamical core in the UM. The GungHo model seeks to replicate the
@@ -302,7 +302,7 @@ continuous normal components; $Q_p^D$ containing discontinuous volume
 integrated scalars; along with a horizontally discontinuous vertically continuous 
 space~\citep{natale2016} for $\theta$ to mimic the Charney-Phillips grid staggering 
 used in ENDGame. Here continuous means that neighbouring cells share degrees of freedom 
-(hereafter dofs) located on the shared entities (e.g. faces, edges, vertices).
+(hereafter dofs) located on the shared entities ({\em e.g.} faces, edges, vertices).
 In practice the lowest order spaces $p=0$ are used, the resulting location of the dofs
 for these spaces are shown in Figure~\ref{fig:fem-spaces}. 
 
@@ -547,8 +547,7 @@ procedure call from the algorithm layer.
 
 \begin{lstlisting}[language=Fortran,caption={Code fragment showing an
 invoke procedure from the Algorithm layer},label={lst:invoke}]
- call invoke( name = "gcr_apply_operator", &
-              setval_c(v(m), 0.0_r_def), &
+ call invoke( setval_c(v(m), 0.0_r_def), &
               matrix_vector_kernel_type(v(m), s(m), mm), &
               enforce_bc_kernel_type( v(m) ) )
 \end{lstlisting}
@@ -565,18 +564,13 @@ matrix.
 
 PSyclone replaces the code for an invoke to the kernels with a call to a
 generated procedure in the PSy layer, with the fields and operators as
-arguments. This is shown below
-\begin{lstlisting}[language=Fortran,caption={Code fragment showing the
-generated Algorithm layer code},label={lst:invoke_56}]
- CALL invoke_gcr_apply_operator(v(m), s(m), mm)
-\end{lstlisting}
+arguments. 
 
 Shown in Listing~\ref{lst:PSy1} is a code fragment from the generated PSy layer for
 the call to the matrix-vector kernel in invoke shown in Listing~\ref{lst:invoke}.
 
 \begin{lstlisting}[language=Fortran, numbers=left,caption={Code 
 fragment of the generated PSy layer with distributed memory support},label={lst:PSy1}]
- CALL v_proxy%set_dirty()
  CALL v_proxy%halo_exchange(depth=1)
  IF (s_proxy%is_dirty(depth=1)) THEN
    CALL s_proxy%halo_exchange(depth=1)
@@ -589,13 +583,11 @@ fragment of the generated PSy layer with distributed memory support},label={lst:
       ndf_any_space_2_s, undf_any_space_2_s, &
       map_any_space_2_s(:,cell))
   END DO 
-  CALL v_proxy%set_dirty()
-  CALL v_proxy%halo_exchange(depth=1)
 \end{lstlisting}
-Lines 1-5 are the distributed
+Lines 1-4 are the distributed
 memory calls to the infrastructure for a halo exchange and
 testing/setting flags to indicate whether a halo (and to what depth)
-has been updated. Lines 6-13 are the looping over the horizontal mesh
+has been updated. Lines 6-12 are the looping over the horizontal mesh
 and the procedure call to the kernel itself. The arguments are simple
 scalars for sizes and loop counters, the data arrays and (in this example)
 the indirection maps. 
@@ -1020,21 +1012,18 @@ transformation is applied to all loops in the schedule which contain
 fields on horizontally continuous spaces that are modified, Secondly,
 all loops, except loops over colours, have two OpenMP transformations
 applied. This script, shown in Listing~\ref{lst:omp.py} in the
-Appendix, has 17 lines of executable Python and is all that is
+Appendix~\ref{app1}, has 17 lines of executable Python and is all that is
 required to apply OpenMP to the whole model. Note, PSyclone supports
 the application of transformations to any subset of a schedule and to
 any set of schedules so may be used for general whole-code
 optimisations and/or specific optimisations to particular code
 regions.
 
-Applying the OpenMP script (Listing~\ref{lst:omp.py}) (with
-the distributed memory support switched off) to the invoke call described in
+Applying the OpenMP transformations to the invoke call described in
 Section~\ref{sec:SoC} results in the following generated PSy layer
 code shown in Listing~\ref{lst:PSy_omp}. 
 \begin{lstlisting}[language=Fortran, numbers=left,caption={Code 
-fragment of the generated PSy layer with OpenMP transformations
-and distributed memory support switched off},label={lst:PSy_omp}]
-  ! Look-up colour map
+fragment of the generated PSy layer with OpenMP transformations},label={lst:PSy_omp}]
   CALL v_proxy%vspace%get_colours(ncolour, ncp_colour, cmap)
   DO colour=1,ncolour
     !$omp parallel default(shared), private(cell)
@@ -1374,11 +1363,8 @@ interprocessor communications helps the performance of deployments with more
 OpenMP threads per MPI rank (for a given total core count) because the
 larger domain of the high-thread runs means that the relative size of the
 halos, and therefore the relative amount of redundant computation, is smaller.
-
-PSyclone is not designed to automatically optimise code for a given
-platform or compiler. It seeks to enable HPC experts to quickly and
-robustly apply their expertise to a whole code base. So while
-currently the same transformation script is used on all code, it is
+Currently a single transformation script for OpenMP is used on all
+code. In the future, it is
 envisaged that in response to profiling an application an HPC expert
 can write and apply different transformations for specific invoke
 calls or specific kernels.
