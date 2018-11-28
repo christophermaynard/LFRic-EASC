@@ -230,8 +230,8 @@ vertex instead of the usual four. The lack of orthogonality and the
 presence of the corner singularities need to be taken into account when
 choosing an appropriate numerical method to avoid errors being dominated
 by the corners.
-%
-\begin{figure}
+
+\begin{figure}[ht]
 \centering\includegraphics[width=0.6\linewidth]{Fig1_Cubed_Sphere.png}
 \caption{\label{fig:cubed-sphere} Equi-angular cubed-sphere mesh as
 used in GungHo with $12x12$ subdivisions per face, 
@@ -305,19 +305,24 @@ used in ENDGame. Here continuous means that neighbouring cells share degrees of 
 (hereafter dofs) located on the shared entities (e.g. faces, edges, vertices).
 In practice the lowest order spaces $p=0$ are used, the resulting location of the dofs
 for these spaces are shown in Figure~\ref{fig:fem-spaces}. 
-%
+
 \begin{figure}
+\vspace{-2cm}
 \centering
-\subfloat[]{\includegraphics[width=0.5\linewidth]{Fig2a_W0_dofs.pdf}}%
-\subfloat[]{\includegraphics[width=0.5\linewidth]{Fig2b_W1_dofs.pdf}}\\
-\subfloat[]{\includegraphics[width=0.5\linewidth]{Fig2c_W2_dofs.pdf}}%
-\subfloat[]{\includegraphics[width=0.5\linewidth]{Fig2d_W3_dofs.pdf}}%
-\caption{\label{fig:fem-spaces} Location of degrees of freedom at $p=0$ for 
-(a) $Q_{1}$, (b) $N_0$, (c) $RT_0$ and (d) $Q_0^D$ finite element spaces.
+%\subfloat[]
+{\includegraphics[width=0.5\linewidth]{Fig2a_W0_dofs.pdf}}%
+%\subfloat[]
+{\includegraphics[width=0.5\linewidth]{Fig2b_W1_dofs.pdf}}
+%\subfloat[]
+{\includegraphics[width=0.5\linewidth]{Fig2c_W2_dofs.pdf}}%
+%\subfloat[]
+{\includegraphics[width=0.5\linewidth]{Fig2d_W3_dofs.pdf}}%
+\caption{\label{fig:fem-spaces} Location of degrees of freedom at
+  $p=0$, from top left to bottom right, $Q_{1}$, $N_0$, $RT_0$ and $Q_0^D$ finite element spaces.
 Circles correspond to scalar degrees of freedom and triangles to vector degrees
 of freedom.}
 \end{figure}
-%
+
 The velocity field $\mathbf{u}$ is placed in the $RT_0$ space; the vorticity 
 $\xi\equiv\nabla\times\mathbf{u}$ is placed in the $N_0$ space; density, $\rho$, 
 and Exner pressure, $\Pi$, are placed in the $Q_0^D$ space; as mentioned above 
@@ -1334,7 +1339,7 @@ introduction of PSyclone has enabled seamless switching from serial to
 parallel running. Having initially being run in serial for many
 months while the first version of PSyclone was developed, it was possible
 to run in parallel (both MPI and OpenMP) on 220,000 cores of the Met Office
-Cray XC40 within less than two weeks of the full PSyclone functionality
+Cray XC40 within two weeks of the full PSyclone functionality
 becoming available.
 
 The GungHo dynamical core is routinely run in a range of science
