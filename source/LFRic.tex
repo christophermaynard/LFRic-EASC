@@ -89,7 +89,7 @@ over the next several decades, three challenges were anticipated.
 
 Firstly, for many years much of the improvement in compute performance
 of the UM could be obtained by buying high performance computers with
-ever more cores. However, clock speeds of new iterations of standard
+faster processors. However, clock speeds of new generations of standard
 CPUs are now often slower than the old. Scaling to more CPUs is
 limited by interprocessor communications, and the costs of powering
 machines with higher core counts is becoming unsustainable. All these
@@ -309,16 +309,13 @@ for these spaces are shown in Figure~\ref{fig:fem-spaces}.
 \begin{figure}
 \vspace{-2cm}
 \centering
-%\subfloat[]
-{\includegraphics[width=0.5\linewidth]{Fig2a_W0_dofs.pdf}}%
-%\subfloat[]
-{\includegraphics[width=0.5\linewidth]{Fig2b_W1_dofs.pdf}}
-%\subfloat[]
-{\includegraphics[width=0.5\linewidth]{Fig2c_W2_dofs.pdf}}%
-%\subfloat[]
-{\includegraphics[width=0.5\linewidth]{Fig2d_W3_dofs.pdf}}%
+\vspace{-1cm}
+\subfloat[]{\includegraphics[width=0.5\linewidth]{Fig2a_W0_dofs.pdf}}%
+\subfloat[]{\includegraphics[width=0.5\linewidth]{Fig2b_W1_dofs.pdf}}\\
+\subfloat[]{\includegraphics[width=0.5\linewidth]{Fig2c_W2_dofs.pdf}}%
+\subfloat[]{\includegraphics[width=0.5\linewidth]{Fig2d_W3_dofs.pdf}}%
 \caption{\label{fig:fem-spaces} Location of degrees of freedom at
-  $p=0$, from top left to bottom right, $Q_{1}$, $N_0$, $RT_0$ and $Q_0^D$ finite element spaces.
+  $p=0$, (a) $Q_{1}$, (b) $N_0$, (c) $RT_0$ and (d) $Q_0^D$ finite element spaces.
 Circles correspond to scalar degrees of freedom and triangles to vector degrees
 of freedom.}
 \end{figure}
@@ -490,16 +487,11 @@ kernels can be called only from the PSy layer. The PSy layer code
 unpacks information from the LFRic objects including data
 arrays, scalars for loop bounds, and supporting arrays of both reals
 and integers for the Finite Element Method.
-The API is enforced by using a Fortran 2003 object
+The API is implemented using a Fortran 2003 object
 orientation coding style. By restricting the
 domain of the problem from all numerical mathematics to only that
 required (in the first instance) in the GungHo dynamical core it is
-possible to constrain the parallelism to the PSy layer. Restoring
-the separation of concerns between the science code and the
-parallel/optimisation code means that in principle different programming
-models can be employed in the PSy layer without changing the science
-code. For this reason, the PSyKAl API can be thought of as a Domain Specific
-Embedded Language (DSEL).
+possible to constrain the parallelism to the PSy layer.
 
 Compilers in general have to be conservative about the assumptions
 they can make in order to guarantee correctness. However, a further
@@ -521,17 +513,18 @@ whether the kernel uses any basis functions.
 
 The restricted domain, strict control of the APIs between layers and,
 critically, the data access descriptors and other kernel metadata
-allow the PSy layer to be constructed according to a set of
-rules. The code itself can therefore be automatically generated, and 
-a Python code parser, transformer and code generator called
-PSyclone has been written to generate it. More details of PSyclone can be found in
-Section~\ref{sec:psyclone}. The generated PSy layer code is Fortran and
-contains calls to the LFRic infrastructure (see Section~\ref{sec:lib} 
-for more details) to access functionality such as:
-MPI distributed memory parallelism, dereferencing the Fortran 2003 objects,
-looping over the horizontal mesh elements and calling the kernels themselves.
-PSyclone can also perform optional transformations to target other programming models
-such as OpenMP or OpenACC.
+allow a set of rules to be derived to construct the PSy layer. The
+code itself can therefore be automatically generated, and a Python
+code parser, transformer and code generator called PSyclone has been
+written to generate it. More details of PSyclone can be found in
+Section~\ref{sec:psyclone}. The generated PSy layer code is Fortran
+and contains calls to the LFRic infrastructure (see
+Section~\ref{sec:lib} for more details) to access functionality such
+as: MPI distributed memory parallelism, dereferencing the Fortran 2003
+objects, looping over the horizontal mesh elements and calling the
+kernels themselves.  PSyclone can also perform optional
+transformations to target other programming models such as OpenMP or
+OpenACC.
 
 \subsection{\label{sec:sub:implement}Implementation}
 
@@ -564,9 +557,7 @@ matrix.
 
 PSyclone replaces the code for an invoke to the kernels with a call to a
 generated procedure in the PSy layer, with the fields and operators as
-arguments. 
-
-Shown in Listing~\ref{lst:PSy1} is a code fragment from the generated PSy layer for
+arguments. Shown in Listing~\ref{lst:PSy1} is a code fragment from the generated PSy layer for
 the call to the matrix-vector kernel in invoke shown in Listing~\ref{lst:invoke}.
 
 \begin{lstlisting}[language=Fortran, numbers=left,caption={Code 
@@ -1187,8 +1178,8 @@ couplings which arise on the coarsest level.
 
 \section{\label{sec:scal}Scaling}
 
-The key performance metric for
-LFRic and GungHo is scalability. The use of an unstructured mesh from
+A key goal of 
+LFRic and GungHo is scalability to meet run-time requirements. The use of an unstructured mesh from
 GungHo and the solver construction described in
 Section~\ref{sec:Solver} should enable the LFRic model to scale to a
 very large degree of parallelism. However, compiling some of the
@@ -1287,14 +1278,14 @@ algorithm favours threading; hence OpenMP is faster and scales better.
 
 This paper describes the novel features of the design of the new LFRic
 model and infrastructure, and the GungHo dynamical core within it. The
-challenges of GungHo's higher order FEM approach on a horizontally unstructured
-mesh essentially resulted in a requirement to develop a new
-infrastructure from scratch. This requirement provided an opportunity
-to develop a Domain Specific Language approach with the aim of
-encapsulating all platform specific parallel deployment requirements
-within metadata. This metadata was then parsed by a DSL
-compiler called PSyclone to automatically generate the OpenMP and MPI
-parallel code required to deploy the application on an HPC machine.
+challenges of GungHo's higher order FEM approach on a horizontally
+unstructured mesh essentially resulted in a requirement to develop a
+new infrastructure from scratch. This requirement provided an
+opportunity to develop a Domain Specific Language be separating the
+concerns of the science code from the parallel code.  A domain
+specific compiler called PSyclone has been developed to automatically
+generate the OpenMP and MPI parallel code required to deploy the
+application on an HPC machine.
 
 The approach contrasts with other work seeking to make
 weather and climate models exascale ready in that most other works
@@ -1318,10 +1309,7 @@ The E3SM (Energy Exascale Earth System Model) project (a collaboration
 between 7 National US laboratories)~\cite{E3SMDocs} has ported
 HOMME (the dynamics/transport component of the Community Earth System
 Model) to a single source version (HOMMEXX) able to run on MIC,
-CPU and GPU architectures using Kokkos. Kokkos is a library that
-implements a programming model in C++ for writing performance
-portable applications by providing template abstractions for parallel
-code~\cite{KokkosGitHub}.
+CPU and GPU architectures using Kokkos~\cite{KokkosGitHub}.
 
 In summary, the design of LFRic has so far proven to be successful. The
 introduction of PSyclone has enabled seamless switching from serial to
@@ -1357,17 +1345,18 @@ becoming very small. One of the first improvements to the algorithmic
 performance is anticipated to come from application of a geometric
 multigrid solver within the new solver infrastructure discussed in the paper.
 
-Currently, the generation of MPI and OpenMP code is supported by PSyclone.
-The approach of computing results into the halo redundantly so as to reduce
-interprocessor communications helps the performance of deployments with more
-OpenMP threads per MPI rank (for a given total core count) because the
-larger domain of the high-thread runs means that the relative size of the
-halos, and therefore the relative amount of redundant computation, is smaller.
-Currently a single transformation script for OpenMP is used on all
-code. In the future, it is
-envisaged that in response to profiling an application an HPC expert
-can write and apply different transformations for specific invoke
-calls or specific kernels.
+Currently, the generation of MPI and OpenMP code is supported by
+PSyclone.  The approach of computing results into the halo redundantly
+so as to reduce interprocessor communications helps the performance of
+deployments with more OpenMP threads per MPI rank (for a given total
+core count) because the larger domain of the high-thread runs means
+that the relative size of the halos, and therefore the relative amount
+of redundant computation, is smaller.  Moreover, PSyclone has been
+developed with the ability to add transformations that increase the
+amount of redundant computation so as to reduce the number of halo
+swaps, to re-order kernels and to loop-fuse kernels to provide a
+performance benefit. Work is also underway to support OpenACC
+transformations.
 
 The overall design has sought to carefully modularise functionality. A
 benefit of this is to enable trialling of different externally sourced
@@ -1381,13 +1370,6 @@ Should the GungHo science converge on a particular mesh or set of meshes,
 and on a particular FEM order it will likely be possible to refactor the
 underlying LFRic data model to support more efficient access to the
 data.
-
-Largely, PSyclone is used to apply MPI and OpenMP. However its
-features include the ability to add transformations that increase the
-amount of redundant computation so as to reduce the number of halo
-swaps, to re-order kernels and to loop-fuse kernels to provide a
-performance benefit. Work is also underway to support OpenACC
-transformations.
 
 As well as continuing the technical capabilities of LFRic, currently,
 sub-grid physics processes are being added to the GungHo dynamical
@@ -1410,24 +1392,18 @@ members is gratefully acknowledged.
 \begin{lstlisting}[language=python,caption={Python script for applying
 transformations to a PSyclone schedule.},label={lst:omp.py}]
 def trans(psy):
-   ''' Applies PSyclone colouring and OpenMP transformations. '''
    ctrans = Dynamo0p3ColourTrans()
    otrans = Dynamo0p3OMPLoopTrans()
    oregtrans = OMPParallelTrans()
-
    # Loop over all of the invokes in the PSy object
    for invoke in psy.invokes.invoke_list:
-
        schedule = invoke.schedule
-
-       # Colour loops over cells unless they are on discontinuous
-       # spaces (W3, WTHETA and W2V) or over dofs
+       # Colour loops over cells unless on discontinuous spaces
        for loop in schedule.loops():
            if loop.iteration_space == "cells" \
                and loop.field_space.orig_name \
                    not in DISCONTINUOUS_FUNCTION_SPACES:
                schedule, _ = ctrans.apply(loop)
-
        # Add OpenMP to loops unless they are over colours
        for loop in schedule.loops():
            if loop.loop_type != "colours":
@@ -1435,10 +1411,6 @@ def trans(psy):
                schedule, _ = otrans.apply(loop, reprod=True)
    return psy
 \end{lstlisting}
-Here, the `psy' object contains PSyclone's internal representation of
-the PSy layer (PSyIRe) that it uses to generate code. The script takes
-the `psy' object, modifies it using transformations and then returns
-it.
 
 \newpage
 
