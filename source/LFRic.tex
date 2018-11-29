@@ -1228,7 +1228,13 @@ solver is relatively large and with multiple solves per time-step and
 five global sums per iteration of the BiCGStab algorithm, the
 cost of the global sums becomes prohibitive.
 
-The new solver implementation will enable better scaling by reducing
+At this stage it would be difficult to make a meaninful comparison to the performance of the current Unified
+Model (UM). The physical parameterisation schemes are, as yet,
+mostly absent from LFRic. Moreover, the UM has been
+highly optimised for the CPU architecture. The unstructured mesh will
+give LFRic the algorithmic scaling advantage but the absolute
+performance, {\em i.e.} wall-clock time, will still be
+inferior. However, the new solver implementation will enable better scaling by reducing
 the number of Krylov solver iterations required by using a much more
 efficient preconditioner. This will also improve the absolute
 performance, {\em i.e.} reduce run-time. Until the solver is closer to
@@ -1237,9 +1243,7 @@ computational optimisations.
 
 \begin{figure}
   \begin{center}
-%    \subfloat[]{
-\includegraphics[width=0.75\linewidth]{Fig8a_strong_scale.eps}%}\\
-%    \subfloat[]{\includegraphics[width=0.75\linewidth]{Fig8b_weak_scale.eps}}
+\includegraphics[width=0.75\linewidth]{Fig8a_strong_scale.eps}
     \caption{\label{fig:OMP_scale}a) Log-log plot of strong scaling of
       50 time-steps of the baroclinic wave problem on a cubed sphere
       mesh, C576, with 30 levels from the {\em fallow deer}
@@ -1248,12 +1252,6 @@ computational optimisations.
       mixed-mode, with 6 MPI ranks per node and 6 OpenMP threads per
       MPI rank. The dashed line shows perfect scaling and is drawn to
       guide the eye.} 
-%   b) Log-linear plot of weak scaling of 50
-%      timesteps of the baroclinic wave problem for a fixed local
-%      volume of $24x24$ cells with 30 levels. The meshes range from
-%      C288 to C1152. The teal bars, labelled MPI, show MPI only, {\em
-%        i.e} 36 MPI ranks per node. The navy bars, labelled OMP show
-%      mixed-mode, with 6 MPI ranks per node and 6 OpenMP threads per rank.}
   \end{center}
 \end{figure}
 
@@ -1281,18 +1279,14 @@ model and infrastructure, and the GungHo dynamical core within it. The
 challenges of GungHo's higher order FEM approach on a horizontally
 unstructured mesh essentially resulted in a requirement to develop a
 new infrastructure from scratch. This requirement provided an
-opportunity to develop a Domain Specific Language be separating the
+opportunity to develop a Domain Specific Language by separating the
 concerns of the science code from the parallel code.  A domain
 specific compiler called PSyclone has been developed to automatically
 generate the OpenMP and MPI parallel code required to deploy the
 application on an HPC machine.
 
-The approach contrasts with other work seeking to make
-weather and climate models exascale ready in that most other works
-are not writing models from scratch but instead either accommodating
-existing models in new frameworks or making significant changes to
-existing models, or both of the above. DSLs feature heavily in other
-approaches but are usually only part of the solution. For example,
+DSLs also feature heavily in other work seeking to make weather and climate
+models exascale ready. In contrast to this work, they are only part of the solution. For example,
 MeteoSwiss have ported the COSMO model to run on GPUs, by
 rewriting the dynamical core code using a DSL (STELLA). Other parts
 of the code (e.g. physics) have been instrumented with compiler
@@ -1336,7 +1330,7 @@ code does not mean that scientists and engineers can work in
 isolation. In fact, the close ties between the scientists and software
 engineers has been a key part of the success of the approach.
 
-The compute performance of the GungHo dynamical core is promising. While
+The scaling performance of the GungHo dynamical core is promising. While
 significant improvements in the algorithmic design are required to
 deliver better throughput of the model, the application (with I/O
 capability switched off) scales well, with scaling tailing off at
@@ -1356,7 +1350,8 @@ developed with the ability to add transformations that increase the
 amount of redundant computation so as to reduce the number of halo
 swaps, to re-order kernels and to loop-fuse kernels to provide a
 performance benefit. Work is also underway to support OpenACC
-transformations.
+transformations which can then be applied without having to re-write
+the science code.
 
 The overall design has sought to carefully modularise functionality. A
 benefit of this is to enable trialling of different externally sourced
