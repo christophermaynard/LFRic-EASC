@@ -85,7 +85,7 @@ which is to work at the forefront of weather and climate science for
 protection, prosperity and well-being.
 
 In continuing to improve the Met Office's atmosphere model capability
-over the next several decades, three challenges were anticipated.
+into the future, three challenges were anticipated.
 
 Firstly, for many years much of the improvement in compute performance
 of the UM could be obtained by buying high performance computers with
@@ -140,7 +140,7 @@ Currently LFRic is mid-way through Phase 2, which will end in
 2020. The start of Phase 3 marks the point when the LFRic atmosphere
 model replaces the Unified model as the Met Office's main target for
 science and computational performance improvements. Phase 3 is
-expected to end with the deployment of the LFRic atmosphere in the Met
+expected to end with the deployment of the LFRic atmosphere model in the Met
 Office NWP Operational Suite towards the mid-2020s, following which
 the first climate configuration will be developed that uses LFRic.
 
@@ -1228,25 +1228,25 @@ solver is relatively large and with multiple solves per time-step and
 five global sums per iteration of the BiCGStab algorithm, the
 cost of the global sums becomes prohibitive.
 
-At this stage it would be difficult to make a meaninful comparison to the performance of the current Unified
-Model (UM). The physical parameterisation schemes are, as yet,
-mostly absent from LFRic. Moreover, the UM has been
-highly optimised for the CPU architecture. The unstructured mesh will
-give LFRic the algorithmic scaling advantage but the absolute
+At this stage it would be difficult to make a meaningful comparison to
+the performance of the current UM. The physical parameterisation
+schemes are, as yet, mostly absent from LFRic. Moreover, the UM has
+been highly optimised for the CPU architecture. The unstructured mesh
+will give LFRic the algorithmic scaling advantage but the absolute
 performance, {\em i.e.} wall-clock time, will still be
-inferior. However, the new solver implementation will enable better scaling by reducing
-the number of Krylov solver iterations required by using a much more
-efficient preconditioner. This will also improve the absolute
-performance, {\em i.e.} reduce run-time. Until the solver is closer to
-being algorithmically optimal it does not make sense to apply further
-computational optimisations.
+inferior. However, the new solver implementation will enable better
+scaling by reducing the number of Krylov solver iterations required by
+using a much more efficient preconditioner. This will also improve the
+absolute performance, {\em i.e.} reduce run-time. Until the solver is
+closer to being algorithmically optimal it does not make sense to
+apply further computational optimisations.
 
 \begin{figure}
   \begin{center}
 \includegraphics[width=0.75\linewidth]{Fig8a_strong_scale.eps}
     \caption{\label{fig:OMP_scale}a) Log-log plot of strong scaling of
       50 time-steps of the baroclinic wave problem on a cubed sphere
-      mesh, C576, with 30 levels from the {\em fallow deer}
+      mesh, C576, with 30 levels from the May 2018
       release. The red bars, labelled MPI, show MPI only, {\em i.e.}
       36 MPI ranks per node. The yellow bars, labelled OMP, show
       mixed-mode, with 6 MPI ranks per node and 6 OpenMP threads per
@@ -1257,7 +1257,7 @@ computational optimisations.
 
 Shown in Figure~\ref{fig:OMP_scale} is the effect of using OpenMP on 
 scaling for 50 time-steps of the baroclinic wave problem, in this case
-with the {\em fallow deer} release of LFRic. The code was
+with the May 2018 release of LFRic. The code was
 again compiled with the Intel 17 compiler. The model employs redundant
 computation into the halos. Each processor computes the contribution
 to dofs that reside on a shared mesh
@@ -1289,7 +1289,7 @@ DSLs also feature heavily in other work seeking to make weather and climate
 models exascale ready. In contrast to this work, they are only part of the solution. For example,
 MeteoSwiss have ported the COSMO model to run on GPUs, by
 rewriting the dynamical core code using a DSL (STELLA). Other parts
-of the code (e.g. physics) have been instrumented with compiler
+of the code ({\em e.g.} physics) have been instrumented with compiler
 directives~\cite{JSFI17}. CSCS (the Swiss National  Supercomputing
 Centre) have made significant progress in porting the ICON dynamical
 core to run on GPUs by instrumentation with OpenACC directives and
